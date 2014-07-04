@@ -1957,7 +1957,7 @@ mm_iface_modem_location_initialize (MMIfaceModemLocation *self,
         mm_gdbus_modem_location_set_capabilities (skeleton, MM_MODEM_LOCATION_SOURCE_NONE);
         mm_gdbus_modem_location_set_supported_assistance_data (skeleton, MM_MODEM_LOCATION_ASSISTANCE_DATA_TYPE_NONE);
         mm_gdbus_modem_location_set_enabled (skeleton, MM_MODEM_LOCATION_SOURCE_NONE);
-        mm_gdbus_modem_location_set_signals_location (skeleton, FALSE);
+        mm_gdbus_modem_location_set_signals_location (skeleton, TRUE);
         mm_gdbus_modem_location_set_location (skeleton,
                                               build_location_dictionary (NULL, NULL, NULL, NULL, NULL));
 
