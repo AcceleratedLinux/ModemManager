@@ -1214,19 +1214,23 @@ register_for_wds_indication (ConnectContext *ctx,
 
 static GError *
 mobile_equipment_error_from_start_network_output (MMBearerQmi                     *self,
+                                                  ConnectContext *ctx,
                                                   QmiMessageWdsStartNetworkOutput *output)
 {
-    QmiWdsCallEndReason            cer;
-    QmiWdsVerboseCallEndReasonType verbose_cer_type;
-    gint16                         verbose_cer_reason;
+    QmiWdsCallEndReason            cer = 0;
+    QmiWdsVerboseCallEndReasonType verbose_cer_type = 0;
+    gint16                         verbose_cer_reason = 0;
+    GError *retval = NULL;
+    const gchar *cer_str = NULL;
+    const gchar *verbose_cer_type_str = NULL;
+    const gchar *verbose_cer_reason_str = NULL;
+    char *str = NULL;
 
     if (qmi_message_wds_start_network_output_get_verbose_call_end_reason (
             output,
             &verbose_cer_type,
             &verbose_cer_reason,
             NULL)) {
-        const gchar *verbose_cer_type_str;
-        const gchar *verbose_cer_reason_str;
 
         verbose_cer_type_str = qmi_wds_verbose_call_end_reason_type_get_string (verbose_cer_type);
         verbose_cer_reason_str = qmi_wds_verbose_call_end_reason_get_string (verbose_cer_type, verbose_cer_reason);
@@ -1236,28 +1240,42 @@ mobile_equipment_error_from_start_network_output (MMBearerQmi                   
                     verbose_cer_type_str,
                     verbose_cer_reason_str);
 
+
         /* If we have a 3GPP verbose call end reason, we try to build an error
          * with the exact error code and message */
         if (verbose_cer_type == QMI_WDS_VERBOSE_CALL_END_REASON_TYPE_3GPP)
-            return qmi_mobile_equipment_error_from_verbose_call_end_reason_3gpp ((QmiWdsVerboseCallEndReason3gpp)verbose_cer_reason, self);
-
-        return g_error_new (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN,
+            retval = qmi_mobile_equipment_error_from_verbose_call_end_reason_3gpp ((QmiWdsVerboseCallEndReason3gpp)verbose_cer_reason, self);
+        else
+            retval = g_error_new (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN,
                             "Call failed: %s error: %s", verbose_cer_type_str, verbose_cer_reason_str);
-    }
-
-    if (qmi_message_wds_start_network_output_get_call_end_reason (
+    } else if (qmi_message_wds_start_network_output_get_call_end_reason (
             output,
             &cer,
             NULL)) {
-        const gchar *cer_str;
 
         cer_str = qmi_wds_call_end_reason_get_string (cer);
         mm_obj_msg (self, "  call end reason (%u): %s", cer, cer_str);
 
-        return g_error_new (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN,
+        retval = g_error_new (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN,
                             "Call failed: %s", cer_str);
     }
 
+    if (asprintf (
+	    &str,
+	    "mm-call-end-notify.sh \"%s\" \"%s\" \"%s %s %s (%u,%u,%u)\"",
+	    mm_base_bearer_get_path(&ctx->self->parent),
+	    ctx->running_ipv6 ? "ipv6" : "ipv4",
+	    cer_str ?: "",
+	    verbose_cer_type_str ?: "",
+	    verbose_cer_reason_str ?: "",
+	    cer,
+	    verbose_cer_type,
+	    verbose_cer_reason) != -1) {
+        system (str);
+        free (str);
+    }
+
+    if (retval) return retval;
     return g_error_new_literal (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN, "Call failed");
 }
 
@@ -1295,7 +1313,7 @@ start_network_ready (QmiClientWds *client,
             mm_obj_msg (self, "couldn't start %s network: %s", ctx->running_ipv4 ? "IPv4" : "IPv6", error->message);
             if (g_error_matches (error, QMI_PROTOCOL_ERROR, QMI_PROTOCOL_ERROR_CALL_FAILED)) {
                 g_clear_error (&error);
-                error = mobile_equipment_error_from_start_network_output (self, output);
+                error = mobile_equipment_error_from_start_network_output (self, ctx, output);
             }
         }
     }
@@ -1389,18 +1407,20 @@ packet_service_status_indication_cb (QmiClientWds *client,
     if (connection_status == QMI_WDS_CONNECTION_STATUS_DISCONNECTED &&
         bearer_status != MM_BEARER_STATUS_DISCONNECTED &&
         bearer_status != MM_BEARER_STATUS_DISCONNECTING) {
-        QmiWdsCallEndReason            cer;
-        QmiWdsVerboseCallEndReasonType verbose_cer_type;
-        gint16                         verbose_cer_reason;
+        QmiWdsCallEndReason            cer = 0;;
+        QmiWdsVerboseCallEndReasonType verbose_cer_type = 0;
+        gint16                         verbose_cer_reason = 0;
         g_autoptr(GError)              connection_error = NULL;
+	char *str = NULL;
+        const gchar *cer_str = NULL;
+        const gchar *verbose_cer_type_str = NULL;
+        const gchar *verbose_cer_reason_str = NULL;
 
         if (qmi_indication_wds_packet_service_status_output_get_verbose_call_end_reason (
                 output,
                 &verbose_cer_type,
                 &verbose_cer_reason,
                 NULL)) {
-            const gchar *verbose_cer_type_str;
-            const gchar *verbose_cer_reason_str;
 
             verbose_cer_type_str = qmi_wds_verbose_call_end_reason_type_get_string (verbose_cer_type);
             verbose_cer_reason_str = qmi_wds_verbose_call_end_reason_get_string (verbose_cer_type, verbose_cer_reason);
@@ -1421,7 +1441,6 @@ packet_service_status_indication_cb (QmiClientWds *client,
                         output,
                         &cer,
                         NULL)) {
-            const gchar *cer_str;
 
             cer_str = qmi_wds_call_end_reason_get_string (cer);
             mm_obj_msg (self, "call end reason (%u): %s", cer, cer_str);
@@ -1430,6 +1449,20 @@ packet_service_status_indication_cb (QmiClientWds *client,
                                             "Call failed: %s", cer_str);
         } else
             connection_error = g_error_new_literal (MM_MOBILE_EQUIPMENT_ERROR, MM_MOBILE_EQUIPMENT_ERROR_UNKNOWN, "Call failed");
+
+        if (asprintf (
+                &str,
+                "mm-call-end-notify.sh \"%s\" \"\" \"%s %s %s (%u,%u,%u)\"",
+                mm_base_bearer_get_path(&self->parent),
+                cer_str ?: "",
+                verbose_cer_type_str ?: "",
+                verbose_cer_reason_str ?: "",
+                cer,
+                verbose_cer_type,
+                verbose_cer_reason) != -1) {
+            system (str);
+            free (str);
+        }
 
         mm_base_bearer_report_connection_status_detailed (MM_BASE_BEARER (self), MM_BEARER_CONNECTION_STATUS_DISCONNECTED, connection_error);
     }
