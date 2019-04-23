@@ -405,6 +405,9 @@ get_bearer_ready (GObject      *source,
                                            &ctx->manager,
                                            &ctx->object);
 
+    if (ctx->bearer)
+        mmcli_force_operation_timeout (G_DBUS_PROXY (ctx->bearer));
+
     if (info_flag)
         g_assert_not_reached ();
 
@@ -459,6 +462,9 @@ mmcli_bearer_run_synchronous (GDBusConnection *connection)
                                          mmcli_get_common_bearer_string (),
                                          &ctx->manager,
                                          &ctx->object);
+
+    if (ctx->bearer)
+        mmcli_force_operation_timeout (G_DBUS_PROXY (ctx->bearer));
 
     /* Request to get info from bearer? */
     if (info_flag) {
