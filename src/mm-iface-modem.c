@@ -1961,8 +1961,23 @@ update_state_internal (MMIfaceModem             *self,
     }
 
     /* Enabled may really be searching or registered */
-    if (new_state == MM_MODEM_STATE_ENABLED)
-        new_state = get_consolidated_subsystem_state (self);
+    if (new_state == MM_MODEM_STATE_ENABLED) {
+        guint connected = 0;
+        if (old_state == MM_MODEM_STATE_CONNECTED) {
+            mm_bearer_list_foreach (bearer_list,
+                                    (MMBearerListForeachFunc)bearer_list_count_connected,
+                                    &connected);
+            mm_obj_info (self, "Bearer connected = %d, when trying to change state (%s -> %s)",
+                     connected,
+                     mm_modem_state_get_string (old_state),
+                     mm_modem_state_get_string (new_state));
+        }
+        /* Don't change state */
+        if (connected > 0)
+            new_state = old_state;
+        else
+            new_state = get_consolidated_subsystem_state (self);
+    }
 
     /* Update state only if different */
     if (new_state != old_state) {
