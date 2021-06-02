@@ -956,6 +956,24 @@ if plugins_options['zte']
   plugins_udev_rules += files('zte/77-mm-zte-port-types.rules')
 endif
 
+# plugin: unitac
+if plugins_options['unitac']
+  sources = files(
+    'unitac/mm-broadband-bearer-unitac.c',
+    'unitac/mm-broadband-modem-unitac.c',
+    'unitac/mm-modem-helpers-unitac.c',
+    'unitac/mm-plugin-unitac.c',
+    'unitac/mm-sim-unitac.c',
+  )
+
+  plugins += {'plugin-unitac': {
+    'plugin': true,
+    'module': {'sources': sources, 'include_directories': plugins_incs, 'c_args': '-DMM_MODULE_NAME="unitac"'},
+  }}
+
+  plugins_udev_rules += files('unitac/77-mm-unitac-port-types.rules')
+endif
+
 foreach plugin_name, plugin_data: plugins
   libpluginhelpers = []
   if plugin_data.has_key('helper')
