@@ -1683,6 +1683,55 @@ libmm_plugin_ublox_la_LIBADD = $(builddir)/libhelpers-ublox.la
 endif
 
 ################################################################################
+# plugin: unitac
+################################################################################
+
+if ENABLE_PLUGIN_UNITAC
+
+dist_udevrules_DATA += unitac/77-mm-unitac-port-types.rules
+
+PLUGIN_UNITAC_COMPILER_FLAGS = \
+	-I$(top_srcdir)/plugins/unitac \
+	-I$(top_builddir)/plugins/unitac \
+	$(NULL)
+
+noinst_LTLIBRARIES += libhelpers-unitac.la
+
+libhelpers_unitac_la_SOURCES = \
+	unitac/mm-modem-helpers-unitac.c \
+	unitac/mm-modem-helpers-unitac.h \
+	$(NULL)
+
+libhelpers_unitac_la_CPPFLAGS = \
+	$(PLUGIN_UNITAC_COMPILER_FLAGS) \
+	-DMM_MODULE_NAME=\"unitac\" \
+	$(NULL)
+
+pkglib_LTLIBRARIES += libmm-plugin-unitac.la
+
+libmm_plugin_unitac_la_SOURCES = \
+	unitac/mm-plugin-unitac.c \
+	unitac/mm-plugin-unitac.h \
+	unitac/mm-broadband-bearer-unitac.c \
+	unitac/mm-broadband-bearer-unitac.h \
+	unitac/mm-broadband-modem-unitac.c \
+	unitac/mm-broadband-modem-unitac.h \
+	unitac/mm-sim-unitac.c \
+	unitac/mm-sim-unitac.h \
+	$(NULL)
+
+libmm_plugin_unitac_la_CPPFLAGS = \
+	$(PLUGIN_COMMON_COMPILER_FLAGS) \
+	$(PLUGIN_UNITAC_COMPILER_FLAGS) \
+	-DMM_MODULE_NAME=\"unitac\" \
+	$(NULL)
+
+libmm_plugin_unitac_la_LDFLAGS = $(PLUGIN_COMMON_LINKER_FLAGS)
+libmm_plugin_unitac_la_LIBADD = $(builddir)/libhelpers-unitac.la
+
+endif
+
+################################################################################
 # plugin: via
 ################################################################################
 
