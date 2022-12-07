@@ -34,14 +34,17 @@
 #include "mm-modem-helpers-ublox.h"
 #include "mm-ublox-enums-types.h"
 
-static void iface_modem_init (MMIfaceModem *iface);
-static void iface_modem_voice_init (MMIfaceModemVoice *iface);
+static void iface_modem_init        (MMIfaceModem      *iface);
+static void iface_modem_3gpp_init   (MMIfaceModem3gpp  *iface);
+static void iface_modem_voice_init  (MMIfaceModemVoice *iface);
 
+static MMIfaceModem3gpp  *iface_modem_3gpp_parent;
 static MMIfaceModemVoice *iface_modem_voice_parent;
 
 G_DEFINE_TYPE_EXTENDED (MMBroadbandModemUblox, mm_broadband_modem_ublox, MM_TYPE_BROADBAND_MODEM, 0,
                         G_IMPLEMENT_INTERFACE (MM_TYPE_IFACE_MODEM, iface_modem_init)
-                        G_IMPLEMENT_INTERFACE (MM_TYPE_IFACE_MODEM_VOICE, iface_modem_voice_init))
+                        G_IMPLEMENT_INTERFACE (MM_TYPE_IFACE_MODEM_VOICE, iface_modem_voice_init)
+                        G_IMPLEMENT_INTERFACE (MM_TYPE_IFACE_MODEM_3GPP, iface_modem_3gpp_init))
 
 
 struct _MMBroadbandModemUbloxPrivate {
@@ -69,6 +72,10 @@ struct _MMBroadbandModemUbloxPrivate {
 
     /* Regex to ignore */
     GRegex *pbready_regex;
+
+    /* TODO: determine if this is needed.  Will be if the load init steps are needed. */
+    /* Initial EPS bearer context number */
+    gint initial_eps_bearer_cid;
 };
 
 /*****************************************************************************/
@@ -869,6 +876,231 @@ load_unlock_retries (MMIfaceModem        *self,
                               FALSE,
                               callback,
                               user_data);
+}
+
+/*****************************************************************************/
+/* Set initial EPS bearer
+ */
+
+typedef enum {
+    SET_INITIAL_EPS_STEP_FIRST = 0,
+    SET_INITIAL_EPS_STEP_CHECK_MODEL, /* Setting EPS bearer does not apply for all models */
+    SET_INITIAL_EPS_STEP_CHECK_MODE,
+    SET_INITIAL_EPS_STEP_RF_OFF,
+    SET_INITIAL_EPS_STEP_SET_SETTINGS,
+    SET_INITIAL_EPS_STEP_RF_ON,
+    SET_INITIAL_EPS_STEP_LAST,
+} SetInitialEpsStep;
+
+typedef struct {
+    MMBearerProperties *properties;
+    SetInitialEpsStep   step;
+    guint               initial_cfun_mode;
+    GError             *saved_error;
+} SetInitialEpsContext;
+
+static void
+set_initial_eps_context_free (SetInitialEpsContext *ctx)
+{
+    g_assert (!ctx->saved_error);
+    g_object_unref (ctx->properties);
+    g_slice_free (SetInitialEpsContext, ctx);
+}
+
+static gboolean
+modem_3gpp_set_initial_eps_bearer_settings_finish (MMIfaceModem3gpp  *self,
+                                                   GAsyncResult      *res,
+                                                   GError           **error)
+{
+    return g_task_propagate_boolean (G_TASK (res), error);
+}
+
+static void set_initial_eps_step (GTask *task);
+
+static void
+set_initial_eps_rf_on_ready (MMBaseModem  *self,
+                             GAsyncResult *res,
+                             GTask        *task)
+{
+    g_autoptr(GError)     error = NULL;
+    SetInitialEpsContext *ctx;
+
+    ctx = (SetInitialEpsContext *) g_task_get_task_data (task);
+
+    if (!mm_base_modem_at_command_finish (self, res, &error)) {
+        mm_obj_warn (self, "couldn't set RF back on: %s", error->message);
+        if (!ctx->saved_error)
+            ctx->saved_error = g_steal_pointer (&error);
+    }
+
+    /* Go to next step */
+    ctx->step++;
+    set_initial_eps_step (task);
+}
+
+static void
+set_initial_eps_rf_off_ready (MMBaseModem  *self,
+                              GAsyncResult *res,
+                              GTask        *task)
+{
+    GError               *error = NULL;
+    SetInitialEpsContext *ctx;
+
+    ctx = (SetInitialEpsContext *) g_task_get_task_data (task);
+
+    if (!mm_base_modem_at_command_finish (self, res, &error)) {
+        mm_obj_warn (self, "couldn't set RF off: %s", error->message);
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    /* Go to next step */
+    ctx->step++;
+    set_initial_eps_step (task);
+}
+
+static void
+set_initial_eps_cfun_mode_load_ready (MMBaseModem  *self,
+                                      GAsyncResult *res,
+                                      GTask        *task)
+{
+    GError                *error = NULL;
+    const gchar           *response;
+    g_autoptr(GRegex)      r = NULL;
+    g_autoptr(GMatchInfo)  match_info = NULL;
+    SetInitialEpsContext  *ctx;
+    guint                  mode;
+
+    ctx = (SetInitialEpsContext *) g_task_get_task_data (task);
+    response = mm_base_modem_at_command_finish (self, res, &error);
+    if (!response || !mm_3gpp_parse_cfun_query_response (response, &mode, &error)) {
+        mm_obj_warn (self, "couldn't load initial functionality mode: %s", error->message);
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    mm_obj_dbg (self, "current functionality mode: %u", mode);
+    if (mode != 1 && mode != 4) {
+        g_task_return_new_error (task, MM_CORE_ERROR, MM_CORE_ERROR_WRONG_STATE,
+                                 "cannot setup the default LTE bearer settings: "
+                                 "the SIM must be powered");
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    ctx->initial_cfun_mode = mode;
+    ctx->step++;
+    set_initial_eps_step (task);
+}
+
+static void
+set_initial_eps_step (GTask *task)
+{
+    MMBroadbandModemUblox *self;
+    SetInitialEpsContext  *ctx;
+
+    self = g_task_get_source_object (task);
+    ctx  = g_task_get_task_data (task);
+
+    switch (ctx->step) {
+    case SET_INITIAL_EPS_STEP_FIRST:
+        ctx->step++;
+        /* fall through */
+
+    case SET_INITIAL_EPS_STEP_CHECK_MODEL:
+        /* TODO: logic to determine method for setting initial EPS bearer based on
+         * model
+         *
+         * This could be either logic here, using mm_iface_modem_get_model() with
+         * the self variable, or could be predefined in some way, such as by
+         * extending/generalizing the BandConfiguration array to also include the
+         * initial EPS method (if applicable -- see WIP changes in
+         * mm-modem-helpers-ublox.c and mm-modem-helpers-ublox.h).
+         *
+         * If setting the initial EPS bearer does not apply to the modem, the
+         * function can clean up and return here.  Otherwise, the proper method
+         * is known and can be used in a later step.
+         * */
+    case SET_INITIAL_EPS_STEP_CHECK_MODE:
+        mm_base_modem_at_command (
+            MM_BASE_MODEM (self),
+            "+CFUN?",
+            5,
+            FALSE,
+            (GAsyncReadyCallback)set_initial_eps_cfun_mode_load_ready,
+            task);
+        return;
+
+    case SET_INITIAL_EPS_STEP_RF_OFF:
+        if (ctx->initial_cfun_mode != 4) {
+            mm_base_modem_at_command (
+                MM_BASE_MODEM (self),
+                "+CFUN=4",
+                5,
+                FALSE,
+                (GAsyncReadyCallback)set_initial_eps_rf_off_ready,
+                task);
+            return;
+        }
+        ctx->step++;
+        /* fall through */
+
+    case SET_INITIAL_EPS_STEP_SET_SETTINGS:
+        /* TODO: logic to apply method for setting initial EPS bearer
+         *
+         * From the SET_INITIAL_EPS_STEP_CHECK_MODEL step, the appropriate method
+         * for setting the initial EPS bearer for the modem is known -- apply one
+         * or the other as needed.
+         * */
+
+    case SET_INITIAL_EPS_STEP_RF_ON:
+        if (ctx->initial_cfun_mode == 1) {
+            mm_base_modem_at_command (
+                MM_BASE_MODEM (self),
+                "+CFUN=1",
+                5,
+                FALSE,
+                (GAsyncReadyCallback)set_initial_eps_rf_on_ready,
+                task);
+            return;
+        }
+        ctx->step++;
+        /* fall through */
+
+    case SET_INITIAL_EPS_STEP_LAST:
+        if (ctx->saved_error)
+            g_task_return_error (task, g_steal_pointer (&ctx->saved_error));
+        else
+            g_task_return_boolean (task, TRUE);
+        g_object_unref (task);
+        return;
+
+    default:
+        g_assert_not_reached ();
+    }
+}
+
+static void
+modem_3gpp_set_initial_eps_bearer_settings (MMIfaceModem3gpp    *self,
+                                            MMBearerProperties  *properties,
+                                            GAsyncReadyCallback  callback,
+                                            gpointer             user_data)
+{
+    GTask                *task;
+    SetInitialEpsContext *ctx;
+
+    task = g_task_new (self, NULL, callback, user_data);
+
+    /* Setup context */
+    ctx = g_slice_new0 (SetInitialEpsContext);
+    ctx->properties = g_object_ref (properties);
+    ctx->step = SET_INITIAL_EPS_STEP_FIRST;
+    g_task_set_task_data (task, ctx, (GDestroyNotify) set_initial_eps_context_free);
+
+    set_initial_eps_step (task);
 }
 
 /*****************************************************************************/
@@ -2005,6 +2237,8 @@ mm_broadband_modem_ublox_init (MMBroadbandModemUblox *self)
     self->priv->support_config.uact     = FEATURE_SUPPORT_UNKNOWN;
     self->priv->support_config.ubandsel = FEATURE_SUPPORT_UNKNOWN;
     self->priv->udtmfd_support = FEATURE_SUPPORT_UNKNOWN;
+    /* TODO: determine if this is needed.  Will be if the load init steps are needed. */
+    self->priv->initial_eps_bearer_cid = -1;
     self->priv->pbready_regex = g_regex_new ("\\r\\n\\+PBREADY\\r\\n",
                                              G_REGEX_RAW | G_REGEX_OPTIMIZE, 0, NULL);
 }
@@ -2043,6 +2277,24 @@ iface_modem_init (MMIfaceModem *iface)
     iface->setup_sim_hot_swap = modem_setup_sim_hot_swap;
     iface->setup_sim_hot_swap_finish = modem_setup_sim_hot_swap_finish;
     iface->cleanup_sim_hot_swap = modem_cleanup_sim_hot_swap;
+}
+
+static void
+iface_modem_3gpp_init (MMIfaceModem3gpp *iface)
+{
+    iface_modem_3gpp_parent = g_type_interface_peek_parent (iface);
+
+    /* Additional steps */
+    /* TODO: Determine if the commented out functions are needed -- nothing
+     * known needs to be loaded other than modem model, and settings can be
+     * set based on input given from future implementation of
+     * SetInitialEPSBearerSettings() in NetworkManager*/
+    //iface->load_initial_eps_bearer = modem_3gpp_load_initial_eps_bearer;
+    //iface->load_initial_eps_bearer_finish = modem_3gpp_load_initial_eps_bearer_finish;
+    //iface->load_initial_eps_bearer_settings = modem_3gpp_load_initial_eps_bearer_settings;
+    //iface->load_initial_eps_bearer_settings_finish = modem_3gpp_load_initial_eps_bearer_settings_finish;
+    iface->set_initial_eps_bearer_settings = modem_3gpp_set_initial_eps_bearer_settings;
+    iface->set_initial_eps_bearer_settings_finish = modem_3gpp_set_initial_eps_bearer_settings_finish;
 }
 
 static void

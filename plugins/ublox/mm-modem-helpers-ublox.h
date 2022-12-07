@@ -34,6 +34,12 @@ typedef enum {
     SETTINGS_UPDATE_METHOD_COPS,
 } SettingsUpdateMethod;
 
+typedef enum {
+    INIT_DEF_BEARER_METHOD_NONE,
+    INIT_DEF_BEARER_METHOD_CGDCONT,
+    INIT_DEF_BEARER_METHOD_UCGDFLT,
+} InitDefBearerMethod;
+
 typedef struct UbloxSupportConfig {
     gboolean             loaded;
     SettingsUpdateMethod method;

@@ -445,7 +445,6 @@ out:
 }
 
 typedef struct {
-    const gchar          *model;
     SettingsUpdateMethod  method;
     FeatureSupport        uact;
     FeatureSupport        ubandsel;
@@ -455,6 +454,54 @@ typedef struct {
     MMModemBand           bands_4g[12];
 } BandConfiguration;
 
+typedef struct {
+    InitDefBearerMethod method;
+    gint                default_cid;
+} InitDefBearerConfig;
+
+typedef struct {
+    const gchar         *model;
+    BandConfiguration    band_config;
+    InitDefBearerConfig  init_def_bearer_config
+} ConfigurationOptions;
+
+/* TODO: FIll this with all models given in BandConfiguration array */
+static const ConfigurationOptions configuration_options[] = {
+    {
+        .model   = "SARA-G300",
+        .band_config = {
+                           .method   = SETTINGS_UPDATE_METHOD_COPS,
+                           .uact     = FEATURE_UNSUPPORTED,
+                           .ubandsel = FEATURE_SUPPORTED,
+                           .mode     = MM_MODEM_MODE_2G,
+                           .bands_2g = { MM_MODEM_BAND_EGSM, MM_MODEM_BAND_DCS }
+                       }
+        .init_def_bearer_config = {
+                                      .method = INIT_DEF_BEARER_METHOD_NONE
+                                  }
+    },
+    {
+        .model    = "TOBY-R200",
+        .band_config = {
+                           .method   = SETTINGS_UPDATE_METHOD_COPS,
+                           .uact     = FEATURE_UNSUPPORTED,
+                           .ubandsel = FEATURE_SUPPORTED,
+                           .mode     = MM_MODEM_MODE_2G | MM_MODEM_MODE_3G | MM_MODEM_MODE_4G,
+                           .bands_2g = { MM_MODEM_BAND_G850, MM_MODEM_BAND_EGSM, MM_MODEM_BAND_DCS, MM_MODEM_BAND_PCS },
+                           .bands_3g = { MM_MODEM_BAND_UTRAN_5, MM_MODEM_BAND_UTRAN_8, MM_MODEM_BAND_UTRAN_2,
+                                       MM_MODEM_BAND_UTRAN_1 },
+                           .bands_4g = { MM_MODEM_BAND_EUTRAN_2, MM_MODEM_BAND_EUTRAN_4, MM_MODEM_BAND_EUTRAN_5,
+                                       MM_MODEM_BAND_EUTRAN_12 }
+                       }
+        .init_def_bearer_config = {
+                                      .method      = INITIAL_DEFAULT_BEARER_METHOD_CGDCONT,
+                                      .default_cid = 1
+                                  }
+    }
+}
+
+/* TODO: make sure all existing uses of band_configuration are adjusted to configuration_options as needed */
+/* TODO: once replaced by ConfigurationOptions, remove */
 static const BandConfiguration band_configuration[] = {
     {
         .model    = "SARA-G300",
