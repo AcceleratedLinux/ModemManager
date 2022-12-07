@@ -47,8 +47,8 @@ MM_PLUGIN_DEFINE_MINOR_VERSION
 /*****************************************************************************/
 /* Custom init */
 
-#define TAG_CINTERION_APP_PORT   "cinterion-app-port"
-#define TAG_CINTERION_MODEM_PORT "cinterion-modem-port"
+#define TAG_CINTERION_APP_PORT   "ID_MM_PORT_TYPE_AT_PRIMARY"
+#define TAG_CINTERION_MODEM_PORT "ID_MM_PORT_TYPE_AT_SECONDARY"
 
 static gboolean
 cinterion_custom_init_finish (MMPortProbe   *probe,
@@ -158,16 +158,32 @@ grab_port (MMPlugin *self,
 
     ptype = mm_port_probe_get_port_type (probe);
 
-    if (g_object_get_data (G_OBJECT (probe), TAG_CINTERION_APP_PORT)) {
-        mm_obj_dbg (self, "port '%s/%s' flagged as primary",
-                    mm_port_probe_get_port_subsys (probe),
-                    mm_port_probe_get_port_name (probe));
+    if (mm_kernel_device_get_property_as_boolean (mm_port_probe_peek_port (probe),
+                                                  "ID_MM_PORT_TYPE_AT_PRIMARY")) {
+        mm_dbg ("(%s/%s)' Port flagged as primary",
+                mm_port_probe_get_port_subsys (probe),
+                mm_port_probe_get_port_name (probe));
         pflags = MM_PORT_SERIAL_AT_FLAG_PRIMARY;
-    } else if (g_object_get_data (G_OBJECT (probe), TAG_CINTERION_MODEM_PORT)) {
-        mm_obj_dbg (self, "port '%s/%s' flagged as PPP",
-                    mm_port_probe_get_port_subsys (probe),
-                    mm_port_probe_get_port_name (probe));
+    } else if (mm_kernel_device_get_property_as_boolean (mm_port_probe_peek_port (probe),
+                                                  "ID_MM_PORT_TYPE_AT_SECONDARY")) {
+        mm_dbg ("(%s/%s)' Port flagged as secondary",
+                mm_port_probe_get_port_subsys (probe),
+                mm_port_probe_get_port_name (probe));
+        pflags = MM_PORT_SERIAL_AT_FLAG_SECONDARY;
+    } else if (mm_kernel_device_get_property_as_boolean (mm_port_probe_peek_port (probe),
+                                                        "ID_MM_PORT_TYPE_AT_PPP")) {
+        mm_dbg ("(%s/%s)' Port flagged as PPP",
+                mm_port_probe_get_port_subsys (probe),
+                mm_port_probe_get_port_name (probe));
         pflags = MM_PORT_SERIAL_AT_FLAG_PPP;
+    } else if (mm_kernel_device_get_property_as_boolean (mm_port_probe_peek_port (probe),
+                                                         "ID_MM_PORT_TYPE_GPS")) {
+        mm_dbg ("(%s/%s)' Port flagged as GPS",
+                mm_port_probe_get_port_subsys (probe),
+                mm_port_probe_get_port_name (probe));
+        /* Not an AT port, but the port to grab GPS traces */
+        g_warn_if_fail (ptype == MM_PORT_TYPE_UNKNOWN);
+        ptype = MM_PORT_TYPE_GPS;
     }
 
     return mm_base_modem_grab_port (modem,
