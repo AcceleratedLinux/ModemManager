@@ -144,16 +144,12 @@ enum {
 
 static GParamSpec *properties[PROP_LAST];
 
-#if defined WITH_SUSPEND_RESUME
-
 enum {
     SIGNAL_SYNC_NEEDED,
     SIGNAL_LAST
 };
 
 static guint signals[SIGNAL_LAST];
-
-#endif
 
 /* When CIND is supported, invalid indicators are marked with this value */
 #define CIND_INDICATOR_INVALID 255
@@ -11679,6 +11675,7 @@ disable (MMBaseModem         *self,
 
 typedef enum {
     ENABLING_STEP_FIRST,
+    ENABLING_STEP_NOTIFY,
     ENABLING_STEP_WAIT_FOR_FINAL_STATE,
     ENABLING_STEP_STARTED,
     ENABLING_STEP_IFACE_MODEM,
@@ -11863,6 +11860,11 @@ enabling_step (GTask *task)
 
     switch (ctx->step) {
     case ENABLING_STEP_FIRST:
+        ctx->step++;
+        /* fall through */
+
+    case ENABLING_STEP_NOTIFY:
+        g_signal_emit (ctx->self, signals[SIGNAL_SYNC_NEEDED], 0);
         ctx->step++;
         /* fall through */
 
@@ -13903,7 +13905,6 @@ mm_broadband_modem_class_init (MMBroadbandModemClass *klass)
                               G_PARAM_READWRITE);
     g_object_class_install_property (object_class, PROP_INDICATORS_DISABLED, properties[PROP_INDICATORS_DISABLED]);
 
-#if defined WITH_SUSPEND_RESUME
     signals[SIGNAL_SYNC_NEEDED] =
         g_signal_new (MM_BROADBAND_MODEM_SIGNAL_SYNC_NEEDED,
                       G_OBJECT_CLASS_TYPE (object_class),
@@ -13912,5 +13913,4 @@ mm_broadband_modem_class_init (MMBroadbandModemClass *klass)
                       NULL, NULL,
                       g_cclosure_marshal_generic,
                       G_TYPE_NONE, 0);
-#endif
 }

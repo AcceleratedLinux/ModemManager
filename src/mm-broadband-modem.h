@@ -42,9 +42,7 @@ typedef struct _MMBroadbandModemPrivate MMBroadbandModemPrivate;
 #define MM_BROADBAND_MODEM_FLOW_CONTROL        "broadband-modem-flow-control"
 #define MM_BROADBAND_MODEM_INDICATORS_DISABLED "broadband-modem-indicators-disabled"
 
-#if defined WITH_SUSPEND_RESUME
-# define MM_BROADBAND_MODEM_SIGNAL_SYNC_NEEDED  "broadband-modem-sync-needed"
-#endif
+#define MM_BROADBAND_MODEM_SIGNAL_SYNC_NEEDED  "broadband-modem-sync-needed"
 
 struct _MMBroadbandModem {
     MMBaseModem parent;
@@ -93,10 +91,8 @@ struct _MMBroadbandModemClass {
     gboolean (* disabling_stopped) (MMBroadbandModem *self,
                                     GError **error);
 
-#if defined WITH_SUSPEND_RESUME
     /* signals */
     void (* sync_needed) (MMBroadbandModem *self);
-#endif
 };
 
 GType mm_broadband_modem_get_type (void);
