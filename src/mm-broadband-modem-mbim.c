@@ -9002,8 +9002,15 @@ shared_qmi_set_primary_sim_slot_ready (MMIfaceModem *self,
                                        GAsyncResult *res,
                                        GTask        *task)
 {
-    if (!mm_shared_qmi_set_primary_sim_slot_finish (self, res, NULL)) {
-        set_primary_sim_slot_mbim (task);
+    GError * error = NULL;
+
+    if (!mm_shared_qmi_set_primary_sim_slot_finish (self, res, &error)) {
+        if (g_error_matches (error, MM_CORE_ERROR, MM_CORE_ERROR_UNSUPPORTED)) {
+            g_error_free (error);
+            set_primary_sim_slot_mbim (task);
+        } else
+            g_task_return_error (task, g_steal_pointer (&error));
+
         return;
     }
 
