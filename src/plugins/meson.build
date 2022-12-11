@@ -139,7 +139,6 @@ endif
 if plugins_shared['option']
   sources = files(
     'option/mm-broadband-modem-option.c',
-    'option/mm-shared.c',
     'option/mm-shared-option.c',
     'option/mm-sim-option.c',
   )
@@ -183,7 +182,6 @@ if plugins_shared['telit']
   sources = files(
     'telit/mm-broadband-modem-telit.c',
     'telit/mm-common-telit.c',
-    'telit/mm-shared.c',
     'telit/mm-shared-telit.c',
   )
 
@@ -224,7 +222,6 @@ if plugins_shared['xmm']
 
   sources = files(
     'xmm/mm-broadband-modem-xmm.c',
-    'xmm/mm-shared.c',
     'xmm/mm-shared-xmm.c',
   )
 
