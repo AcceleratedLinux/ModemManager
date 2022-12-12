@@ -56,6 +56,26 @@ quit_cb (gpointer user_data)
     return FALSE;
 }
 
+static gboolean
+hup_cb (gpointer user_data)
+{
+    GError *err = NULL;
+
+    mm_info ("Reloading log file...");
+    mm_log_shutdown ();
+    if (!mm_log_setup (mm_context_get_log_level (),
+       mm_context_get_log_file (),
+       mm_context_get_log_journal (),
+       mm_context_get_log_timestamps (),
+       mm_context_get_log_relative_timestamps (),
+       mm_context_get_log_personal_info (),
+       &err)) {
+            g_warning ("Failed to set up logging: %s", err->message);
+            g_error_free (err);
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 #if defined WITH_SUSPEND_RESUME
 
 static void
@@ -218,6 +238,7 @@ main (int argc, char *argv[])
 
     g_unix_signal_add (SIGTERM, quit_cb, NULL);
     g_unix_signal_add (SIGINT, quit_cb, NULL);
+    g_unix_signal_add (SIGHUP, hup_cb, NULL);
 
     /* Early register all known errors */
     register_dbus_errors ();
