@@ -3725,6 +3725,8 @@ common_process_serving_system_3gpp (MMBroadbandModemQmi *self,
         (selected_network == QMI_NAS_NETWORK_TYPE_UNKNOWN &&
          (mm_access_technologies & MM_IFACE_MODEM_3GPP_ALL_ACCESS_TECHNOLOGIES_MASK))) {
         mm_obj_dbg (self, "processing 3GPP info...");
+    } else if (selected_network == QMI_NAS_NETWORK_TYPE_3GPP2) {
+        mm_obj_dbg (self, "3GPP2 modem may not have 3GPP info...");
     } else {
         MMModem3gppRegistrationState reg_state_3gpp;
 
