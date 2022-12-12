@@ -22,6 +22,7 @@
 #include "mm-iface-modem.h"
 #include "mm-iface-modem-3gpp.h"
 #include "mm-iface-modem-cdma.h"
+#include "mm-iface-modem-messaging.h"
 #include "mm-base-modem.h"
 #include "mm-base-modem-at.h"
 #include "mm-base-sim.h"
@@ -31,10 +32,10 @@
 #include "mm-context.h"
 #include "mm-dispatcher-fcc-unlock.h"
 #if defined WITH_QMI
-# include "mm-broadband-modem-qmi.h"
+#include "mm-broadband-modem-qmi.h"
 #endif
 #if defined WITH_MBIM
-# include "mm-broadband-modem-mbim.h"
+#include "mm-broadband-modem-mbim.h"
 #endif
 
 #define SIGNAL_QUALITY_RECENT_TIMEOUT_SEC 60
@@ -1816,6 +1817,20 @@ periodic_signal_check_run (MMIfaceModem *self)
     g_task_set_task_data (task, ctx, (GDestroyNotify) g_free);
 
     periodic_signal_check_step (task);
+
+#if defined WITH_MBIM
+    /* HACK: LE910NA-V2 (model=FIH7160) does not send the "I've got a new SMS" event over
+     * MBIM, so periodically re-enable the messaging interface to recheck
+     * for SMSs manually. Just do it for all MBIM modems for now. */
+    const gchar *model = mm_iface_modem_get_model (self);
+    if (MM_IS_BROADBAND_MODEM_MBIM(self) && g_ascii_strcasecmp(model, "FIH7160") == 0) {
+        mm_obj_dbg (self, "Periodic SMS check, re-enabling the Messaging interface...");
+        mm_iface_modem_messaging_enable (MM_IFACE_MODEM_MESSAGING (self),
+                                         NULL,
+                                         (GAsyncReadyCallback)mm_iface_modem_messaging_enable_finish,
+                                         NULL);
+    }
+#endif
 
     /* Reset the source id as we're removing the timeout source */
     if (priv->signal_check_timeout_source)
