@@ -165,12 +165,18 @@ port_timed_out_cb (MMPort       *port,
                    guint         n_consecutive_timeouts,
                    MMBaseModem  *self)
 {
-    /* If reached the maximum number of timeouts, invalidate modem */
-    if (n_consecutive_timeouts >= self->priv->max_timeouts) {
-        mm_obj_err (self, "port %s timed out %u consecutive times, marking modem as invalid",
+    /* If reached the maximum number of timeouts, try a different AT port */
+    if (n_consecutive_timeouts >= self->priv->max_timeouts
+            && MM_IS_PORT_SERIAL_AT (port)
+            && MM_PORT_SERIAL_AT (port) == self->priv->primary
+            && self->priv->secondary) {
+        MMPortSerialAt *tmp;
+        mm_obj_err (self, "port %s timed out %u consecutive times, switching primary/secondary AT command ports",
                     mm_port_get_device (MM_PORT (port)),
                     n_consecutive_timeouts);
-        g_cancellable_cancel (self->priv->cancellable);
+        tmp = self->priv->primary;
+        self->priv->primary = self->priv->secondary;
+        self->priv->secondary = tmp;
         return;
     }
 
