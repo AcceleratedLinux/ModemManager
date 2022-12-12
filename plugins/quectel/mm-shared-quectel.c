@@ -438,6 +438,19 @@ quectel_qusim_unsolicited_handler (MMPortSerialAt *port,
 /*****************************************************************************/
 /* Setup SIM hot swap context (Modem interface) */
 
+static void
+quectel_rdy_unsolicited_handler (MMPortSerialAt *port,
+                                 GMatchInfo *match_info,
+                                 MMIfaceModem* self)
+{
+    mm_obj_info (self,
+                "internal modem reset detected by unsolicited RDY, reprobing");
+
+    mm_base_modem_set_reprobe (MM_BASE_MODEM (self), TRUE);
+    mm_base_modem_set_valid (MM_BASE_MODEM (self), FALSE);
+}
+
+
 gboolean
 mm_shared_quectel_setup_sim_hot_swap_finish (MMIfaceModem  *self,
                                              GAsyncResult  *res,
@@ -497,6 +510,22 @@ mm_shared_quectel_setup_sim_hot_swap (MMIfaceModem        *self,
     }
 
     mm_obj_dbg (self, "+QUSIM detection set up");
+
+    pattern = g_regex_new ("RDY\\r\\n", G_REGEX_RAW, 0, NULL);
+    g_assert (pattern);
+
+    for (i = 0; i < G_N_ELEMENTS (ports); i++) {
+        if (ports[i])
+            mm_port_serial_at_add_unsolicited_msg_handler (
+                ports[i],
+                pattern,
+                (MMPortSerialAtUnsolicitedMsgFn)quectel_rdy_unsolicited_handler,
+                self,
+                NULL);
+    }
+
+    g_regex_unref (pattern);
+    mm_obj_dbg (self, "RDY detection set up");
 
     if (!mm_broadband_modem_sim_hot_swap_ports_context_init (MM_BROADBAND_MODEM (self), &error))
         mm_obj_warn (self, "failed to initialize SIM hot swap ports context: %s", error->message);
