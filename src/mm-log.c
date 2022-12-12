@@ -216,6 +216,9 @@ _mm_log (gpointer     obj,
 {
     va_list  args;
     GTimeVal tv;
+    char tmbuf[64];
+    time_t nowtime;
+    struct tm nowtm;
 
     if (!(log_level & level))
         return;
@@ -231,7 +234,10 @@ _mm_log (gpointer     obj,
 
     if (ts_flags == TS_FLAG_WALL) {
         g_get_current_time (&tv);
-        g_string_append_printf (msgbuf, "[%09ld.%06ld] ", tv.tv_sec, tv.tv_usec);
+        nowtime = tv.tv_sec;
+        localtime_r(&nowtime, &nowtm);
+        strftime(tmbuf, sizeof tmbuf, "%b %d %H:%M:%S", &nowtm);
+        g_string_append_printf (msgbuf, "[%s] ", tmbuf);
     } else if (ts_flags == TS_FLAG_REL) {
         glong secs;
         glong usecs;
@@ -339,7 +345,7 @@ mm_log_setup (const gchar  *level,
     } else
 #endif
     if (!log_file) {
-        openlog (G_LOG_DOMAIN, LOG_CONS | LOG_PID | LOG_PERROR, LOG_DAEMON);
+        openlog (G_LOG_DOMAIN, LOG_CONS | LOG_PID, LOG_DAEMON);
         log_backend = log_backend_syslog;
     } else {
         logfd = open (log_file,
@@ -390,6 +396,8 @@ mm_log_shutdown (void)
 {
     if (logfd < 0)
         closelog ();
-    else
+    else {
         close (logfd);
+        logfd = -1;
+    }
 }
