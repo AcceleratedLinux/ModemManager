@@ -7009,6 +7009,9 @@ modem_3gpp_enable_unsolicited_events (MMIfaceModem3gpp *_self,
     self->priv->enable_flags |= PROCESS_NOTIFICATION_FLAG_CONNECT;
     self->priv->enable_flags |= PROCESS_NOTIFICATION_FLAG_PACKET_SERVICE;
     self->priv->enable_flags |= PROCESS_NOTIFICATION_FLAG_IP_CONFIGURATION;
+    /* SMS notifications don't work on the LE910NA-V2 (FIH7160) */
+    if (g_ascii_strcasecmp(mm_iface_modem_get_model (self), "FIH7160") != 0)
+        self->priv->enable_flags |= PROCESS_NOTIFICATION_FLAG_SMS_READ;
     if (self->priv->is_pco_supported)
         self->priv->enable_flags |= PROCESS_NOTIFICATION_FLAG_PCO;
     if (self->priv->is_lte_attach_info_supported)
