@@ -1783,8 +1783,14 @@ mm_new_iso8601_time (guint    year,
 
     if (have_offset) {
         g_autoptr(GTimeZone) tz = NULL;
+        g_autofree gchar *identifier = NULL;
 
-        tz = g_time_zone_new_offset (offset_minutes * 60);
+        identifier = g_strdup_printf ("%c%02u:%02u:00",
+                                      (offset_minutes >= 0) ? '+' : '-',
+                                      ABS (offset_minutes) / 60,
+                                      ABS (offset_minutes) % 60);
+
+        tz = g_time_zone_new (identifier);
         dt = g_date_time_new (tz, year, month, day, hour, minute, second);
     } else
         dt = g_date_time_new_utc (year, month, day, hour, minute, second);
