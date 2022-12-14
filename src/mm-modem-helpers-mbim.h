@@ -143,4 +143,30 @@ gboolean mm_signal_from_mbim_signal_state (MbimDataClass          data_class,
                                            MMSignal             **out_lte,
                                            MMSignal             **out_nr5g);
 
+/*****************************************************************************/
+/* RF utilities */
+/*****************************************************************************/
+
+/* Value defined to allow tolerance in the center frequency comparison logic */
+#define FREQUENCY_TOLERANCE_HZ 300
+
+typedef struct {
+    MMServingCellType  serving_cell_type;
+    guint32            bandwidth;
+    guint64            center_frequency;
+} MMRfInfo;
+
+void mm_rf_info_free (MMRfInfo *rf_data);
+
+void mm_rfim_info_list_free (GList *rfim_info_list);
+
+GList *mm_rfim_info_list_from_mbim_intel_rfim_frequency_value_array (MbimIntelRfimFrequencyValueArray  *freq_info,
+                                                                     guint    freq_count,
+                                                                     gpointer log_object);
+
+gdouble mm_earfcn_to_frequency (guint32  earfcn,
+                                gpointer log_object);
+gdouble mm_nrarfcn_to_frequency (guint32  nrarfcn,
+                                 gpointer log_object);
+
 #endif  /* MM_MODEM_HELPERS_MBIM_H */
