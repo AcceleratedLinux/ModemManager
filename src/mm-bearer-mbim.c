@@ -1353,7 +1353,7 @@ load_settings_from_bearer (MMBearerMbim        *self,
         (multiplex == MM_BEARER_MULTIPLEX_SUPPORT_REQUESTED ||
          multiplex == MM_BEARER_MULTIPLEX_SUPPORT_REQUIRED)) {
         /* the link prefix hint given must be modem-specific */
-        ctx->link_prefix_hint = g_strdup_printf ("mbimmux%u.", mm_base_modem_get_dbus_id (MM_BASE_MODEM (ctx->modem)));
+        ctx->link_prefix_hint = g_strdup_printf ("%s.", mm_kernel_device_get_name (mm_port_peek_kernel_device (ctx->data)));
     }
 
     if (!multiplex_supported && multiplex == MM_BEARER_MULTIPLEX_SUPPORT_REQUIRED) {
