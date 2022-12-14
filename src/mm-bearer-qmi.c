@@ -2473,7 +2473,7 @@ load_settings_from_bearer (MMBearerQmi         *self,
         }
 
         /* The link prefix hint given must be modem-specific */
-        ctx->link_prefix_hint = g_strdup_printf ("qmapmux%u.", mm_base_modem_get_dbus_id (MM_BASE_MODEM (modem)));
+        ctx->link_prefix_hint = g_strdup_printf ("%s.", mm_kernel_device_get_name (mm_port_peek_kernel_device (ctx->data)));
     }
 
     /* If profile id is given, we'll launch the connection specifying the profile id in use
