@@ -4,6 +4,7 @@
 # helpers library
 src_inc = include_directories('.')
 kerneldevice_inc = include_directories('kerneldevice')
+plugins_inc = include_directories('plugins')
 
 headers = files(
   'mm-modem-helpers.h',
@@ -309,12 +310,21 @@ if enable_mbim
   )
 endif
 
+# Daemon related variables before processing plugins
+daemon_sources = sources + daemon_enums_sources
+daemon_deps = deps
+daemon_c_args = c_args
+
+# Additional vendor plugins
+subdir('plugins')
+
 executable(
   'ModemManager',
-  sources: sources + daemon_enums_sources,
-  include_directories: top_inc,
-  dependencies: deps,
-  c_args: c_args,
+  sources: [daemon_sources, builtin_sources],
+  include_directories: [top_inc, plugins_inc],
+  dependencies: daemon_deps,
+  c_args: daemon_c_args,
+  link_whole: builtin_plugins,
   install: true,
   install_dir: mm_sbindir,
 )
