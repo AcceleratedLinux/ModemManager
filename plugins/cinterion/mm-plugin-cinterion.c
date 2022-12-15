@@ -50,6 +50,18 @@ MM_PLUGIN_DEFINE_MINOR_VERSION
 #define TAG_CINTERION_APP_PORT   "cinterion-app-port"
 #define TAG_CINTERION_MODEM_PORT "cinterion-modem-port"
 
+typedef struct {
+    MMPortSerialAt *port;
+    guint port_responsive_retries;
+} CinterionCustomInitContext;
+
+static void
+cinterion_custom_init_context_free (CinterionCustomInitContext *ctx)
+{
+    g_object_unref (ctx->port);
+    g_slice_free (CinterionCustomInitContext, ctx);
+}
+
 static gboolean
 cinterion_custom_init_finish (MMPortProbe   *probe,
                               GAsyncResult  *result,
@@ -59,18 +71,32 @@ cinterion_custom_init_finish (MMPortProbe   *probe,
 }
 
 static void
+wait_for_sqport (GTask *task);
+
+static void
 sqport_ready (MMPortSerialAt *port,
               GAsyncResult   *res,
               GTask          *task)
 {
     MMPortProbe *probe;
     const gchar *response;
+    GError *error = NULL;
 
     probe = g_task_get_source_object (task);
 
     /* Ignore errors, just avoid tagging */
-    response = mm_port_serial_at_command_finish (port, res, NULL);
-    if (response) {
+    response = mm_port_serial_at_command_finish (port, res, &error);
+    if (error) {
+        /* On a timeout or send error, wait */
+        if (g_error_matches (error, MM_SERIAL_ERROR, MM_SERIAL_ERROR_RESPONSE_TIMEOUT) ||
+            g_error_matches (error, MM_SERIAL_ERROR, MM_SERIAL_ERROR_SEND_FAILED)) {
+            wait_for_sqport (task);
+            return;
+        }
+
+        mm_obj_warn (probe, "port initialization logic failed: %s", error->message);
+    }
+    else if (response) {
         /* A valid reply to AT^SQPORT tells us this is an AT port already */
         mm_port_probe_set_result_at (probe, TRUE);
 
@@ -85,25 +111,49 @@ sqport_ready (MMPortSerialAt *port,
 }
 
 static void
+wait_for_sqport (GTask *task)
+{
+    CinterionCustomInitContext *ctx;
+
+    ctx = g_task_get_task_data (task);
+
+    if (ctx->port_responsive_retries == 0) {
+        g_task_return_boolean (task, TRUE);
+        g_object_unref (task);
+        return;
+    }
+    ctx->port_responsive_retries--;
+
+    mm_port_serial_at_command (
+        ctx->port,
+        "AT^SQPORT?",
+        5,
+        FALSE, /* raw */
+        FALSE, /* allow_cached */
+        g_task_get_cancellable (task),
+        (GAsyncReadyCallback) sqport_ready,
+        task);
+}
+
+static void
 cinterion_custom_init (MMPortProbe         *probe,
                        MMPortSerialAt      *port,
                        GCancellable        *cancellable,
                        GAsyncReadyCallback  callback,
                        gpointer             user_data)
 {
+	CinterionCustomInitContext *ctx;
     GTask *task;
 
+    ctx = g_slice_new (CinterionCustomInitContext);
+    ctx->port = g_object_ref (port);
+    ctx->port_responsive_retries = 5;
     task = g_task_new (probe, cancellable, callback, user_data);
+    g_task_set_check_cancellable (task, FALSE);
+    g_task_set_task_data (task, ctx, (GDestroyNotify)cinterion_custom_init_context_free);
 
-    mm_port_serial_at_command (
-        port,
-        "AT^SQPORT?",
-        3,
-        FALSE, /* raw */
-        FALSE, /* allow cached */
-        cancellable,
-        (GAsyncReadyCallback) sqport_ready,
-        task);
+    mm_obj_dbg (probe, "Start polling for port type....");
+    wait_for_sqport (task);
 }
 
 /*****************************************************************************/
@@ -183,7 +233,7 @@ G_MODULE_EXPORT MMPlugin *
 mm_plugin_create (void)
 {
     static const gchar *subsystems[] = { "tty", "net", "usbmisc", "wwan", NULL };
-    static const gchar *vendor_strings[] = { "cinterion", "siemens", NULL };
+    static const gchar *vendor_strings[] = { "cinterion", "siemens", "thales", NULL };
     static const guint16 vendor_ids[] = { 0x1e2d, 0x0681, 0x1269, 0 };
     static const MMAsyncMethod custom_init = {
         .async  = G_CALLBACK (cinterion_custom_init),
