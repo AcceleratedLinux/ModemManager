@@ -29,6 +29,7 @@
 #include "mm-iface-modem-voice.h"
 #include "mm-broadband-modem-mbim-cinterion.h"
 #include "mm-shared-cinterion.h"
+#include "mm-base-modem-at.h"
 
 static void iface_modem_init          (MMIfaceModem         *iface);
 static void iface_modem_location_init (MMIfaceModemLocation *iface);
@@ -49,6 +50,123 @@ G_DEFINE_TYPE_EXTENDED (MMBroadbandModemMbimCinterion, mm_broadband_modem_mbim_c
                         G_IMPLEMENT_INTERFACE (MM_TYPE_SHARED_CINTERION, shared_cinterion_init))
 
 /*****************************************************************************/
+
+/* Manufacturer loading (Modem interface) */
+static gboolean
+response_processor_string_ignore_at_errors (MMBaseModem *self,
+                                            gpointer none,
+                                            const gchar *command,
+                                            const gchar *response,
+                                            gboolean last_command,
+                                            const GError *error,
+                                            GVariant **result,
+                                            GError **result_error)
+{
+    if (error) {
+        /* Ignore AT errors (ie, ERROR or CMx ERROR) */
+        if (error->domain != MM_MOBILE_EQUIPMENT_ERROR || last_command)
+            *result_error = g_error_copy (error);
+
+        return FALSE;
+    }
+
+    *result = g_variant_new_string (response);
+    return TRUE;
+}
+
+static gchar *
+sanitize_info_reply (GVariant *v, const char *prefix)
+{
+    const gchar *reply, *p;
+    gchar *sanitized;
+
+    /* Strip any leading command reply */
+    reply = g_variant_get_string (v, NULL);
+    p = strstr (reply, prefix);
+    if (p)
+        reply = p + strlen (prefix);
+    sanitized = g_strdup (reply);
+    return mm_strip_quotes (g_strstrip (sanitized));
+}
+
+/*****************************************************************************/
+/* Model loading (Modem interface) */
+
+static gchar *
+modem_load_model_finish (MMIfaceModem *self,
+                         GAsyncResult *res,
+                         GError **error)
+{
+    GVariant *result;
+    gchar *model = NULL;
+
+    result = mm_base_modem_at_sequence_finish (MM_BASE_MODEM (self), res, NULL, error);
+    if (result) {
+        model = sanitize_info_reply (result, "GMM:");
+        mm_obj_dbg (self, "loaded model: %s", model);
+    }
+    return model;
+}
+
+static const MMBaseModemAtCommand models[] = {
+        { "+GMM", 3, TRUE, response_processor_string_ignore_at_errors },
+        { "+GMM", 3, TRUE, response_processor_string_ignore_at_errors },
+        { NULL }
+};
+
+static void
+modem_load_model (MMIfaceModem *self,
+                  GAsyncReadyCallback callback,
+                  gpointer user_data)
+{
+    mm_obj_dbg (self, "loading model...");
+    mm_base_modem_at_sequence (
+            MM_BASE_MODEM (self),
+            models,
+            NULL, /* response_processor_context */
+            NULL, /* response_processor_context_free */
+            callback,
+            user_data);
+}
+
+/*****************************************************************************/
+/* Revision loading */
+
+static gchar *
+modem_load_revision_finish (MMIfaceModem *self,
+                            GAsyncResult *res,
+                            GError **error)
+{
+    GVariant *result;
+    gchar *revision = NULL;
+
+    result = mm_base_modem_at_sequence_finish (MM_BASE_MODEM (self), res, NULL, error);
+    if (result) {
+        revision = sanitize_info_reply (result, "VERSION:");
+        mm_obj_dbg (self, "loaded revision: %s", revision);
+    }
+    return revision;
+}
+
+static const MMBaseModemAtCommand revisions[] = {
+        { "^VERSION?",  3, TRUE, response_processor_string_ignore_at_errors },
+        { NULL }
+};
+
+static void
+modem_load_revision (MMIfaceModem *self,
+                     GAsyncReadyCallback callback,
+                     gpointer user_data)
+{
+    mm_obj_dbg (self, "loading revision...");
+    mm_base_modem_at_sequence (
+            MM_BASE_MODEM (self),
+            revisions,
+            NULL, /* response_processor_context */
+            NULL, /* response_processor_context_free */
+            callback,
+            user_data);
+}
 
 MMBroadbandModemMbimCinterion *
 mm_broadband_modem_mbim_cinterion_new (const gchar *device,
@@ -83,8 +201,12 @@ iface_modem_init (MMIfaceModem *iface)
 {
     iface_modem_parent = g_type_interface_peek_parent (iface);
 
-    iface->reset        = mm_shared_cinterion_modem_reset;
-    iface->reset_finish = mm_shared_cinterion_modem_reset_finish;
+    iface->reset                = mm_shared_cinterion_modem_reset;
+    iface->reset_finish         = mm_shared_cinterion_modem_reset_finish;
+    iface->load_model           = modem_load_model;
+    iface->load_model_finish    = modem_load_model_finish;
+    iface->load_revision        = modem_load_revision;
+    iface->load_revision_finish = modem_load_revision_finish;
 }
 
 static MMIfaceModem *

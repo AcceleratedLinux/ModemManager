@@ -68,4 +68,36 @@ ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="02", SUBS
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="04", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="006F", ENV{.MM_USBIFNUM}=="06", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 
+# MV31-W mbim enumeration
+#  ttyACM1 (if #2): AT port
+#  ttyACM3 (if #4): NMEA/GPS port
+#  ttyACM4 (if #5): Diag port
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b3", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_IGNORE}="1"
+
+# MV31-W QMI enumeration
+#  ttyACM1 (if #1): AT port
+#  ttyACM3 (if #2): NMEA/GPS port
+#  ttyACM4 (if #3): Diag port
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="01", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# MV31-W_2 mbim enumeration
+#  ttyACM1 (if #2): AT port
+#  ttyACM3 (if #4): NMEA/GPS port
+#  ttyACM4 (if #5): Diag port
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_IGNORE}="1"
+
+# MV31-W_2 QMI enumeration
+#  ttyACM1 (if #1): AT port
+#  ttyACM3 (if #2): NMEA/GPS port
+#  ttyACM4 (if #3): Diag port
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b9", ENV{.MM_USBIFNUM}=="01", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b9", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b9", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
 LABEL="mm_cinterion_port_types_end"
