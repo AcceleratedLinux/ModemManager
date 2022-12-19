@@ -4352,6 +4352,9 @@ mm_3gpp_parse_iccid (const char *raw_iccid, GError **error)
             goto error;
         }
         swap = TRUE;
+    } else if (buf[0] == '0' && buf[1] == '2') {
+        /* CBRS SIM's used internally have ICCID starting with 2. */
+        swap = TRUE;
     } else {
       /* FIXME: Instead of erroring out, revisit this solution if we find any SIM
        * that doesn't use '89' as the major industry identifier of the ICCID.
