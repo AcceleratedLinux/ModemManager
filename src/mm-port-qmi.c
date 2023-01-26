@@ -84,6 +84,7 @@ struct _MMPortQmiPrivate {
     GList    *preallocated_links_setup_pending;
     /* first multiplex setup */
     gboolean first_multiplex_setup;
+    gboolean qmiwwan_qmap_only;
 };
 
 /*****************************************************************************/
@@ -165,6 +166,13 @@ initialize_endpoint_info (MMPortQmi *self)
             break;
     }
 
+    /*
+     * EM7411 and EM7511 don't work with QMAPV4 using rmnet, we use the ID_MM_QMIWWAN_QMAP_ONLY
+     * property to indicate this.
+     */
+    self->priv->qmiwwan_qmap_only = mm_kernel_device_get_global_property_as_boolean (kernel_device,
+                                                                                     "ID_MM_QMIWWAN_QMAP_ONLY");
+    mm_obj_dbg (self, "ID_MM_QMIWWAN_QMAP_ONLY = %d", self->priv->qmiwwan_qmap_only);
     mm_obj_dbg (self, "endpoint info updated: type '%s', interface number '%u'",
                 qmi_data_endpoint_type_get_string (self->priv->endpoint_type),
                 self->priv->endpoint_interface_number);
@@ -1608,6 +1616,12 @@ check_data_format_combination (GTask *task)
             ((!ctx->wda_dap_supported) ||
              (ctx->action != MM_PORT_QMI_SETUP_DATA_FORMAT_ACTION_SET_MULTIPLEX)))
             continue;
+
+        if (self->priv->qmiwwan_qmap_only && combination->kernel_data_mode == MM_PORT_QMI_KERNEL_DATA_MODE_MUX_RMNET)
+        {
+            mm_obj_dbg (self, "Skipping RMNET, not supported on this modem");
+            continue;
+        }
 
         kernel_data_mode_str = mm_port_qmi_kernel_data_mode_build_string_from_mask (combination->kernel_data_mode);
         mm_obj_dbg (self, "selected data format setup:");
