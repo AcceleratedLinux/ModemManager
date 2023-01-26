@@ -29,6 +29,7 @@ ATTRS{idVendor}=="1199", ATTRS{idProduct}=="9071", ENV{.MM_USBIFNUM}=="00", SUBS
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="9091", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="9091", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1199", ATTRS{idProduct}=="9091", ENV{.MM_USBIFNUM}=="00", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="1199", ATTRS{idProduct}=="9091", ENV{ID_MM_QMIWWAN_QMAP_ONLY}="1"
 
 GOTO="mm_sierra_end"
 
