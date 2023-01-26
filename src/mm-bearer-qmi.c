@@ -2000,17 +2000,28 @@ connect_context_step (GTask *task)
         /* fall through */
 
     case CONNECT_STEP_SETUP_LINK_MAIN_UP:
-        /* if the connection is done through a new link, we need to ifup the main interface */
-        if (ctx->link) {
-            mm_obj_dbg (self, "bringing main interface %s up...", mm_port_get_device (ctx->data));
-            mm_port_net_link_setup (MM_PORT_NET (ctx->data),
-                                    TRUE,
-                                    0, /* ignore */
-                                    g_task_get_cancellable (task),
-                                    (GAsyncReadyCallback) main_interface_up_ready,
-                                    task);
-            return;
-        }
+        gboolean qmi_wwan_only = mm_kernel_device_get_global_property_as_boolean (mm_port_peek_kernel_device (ctx->data),
+                                                                                  "ID_MM_QMIWWAN_QMAP_ONLY");
+
+        /*
+         * Certain Sierra Wireless modems seem to lose the RAWIP setting if we bring the main interface
+         * up here, and it won't respond to DHCP requests, these modems have the ID_MM_QMIWWAN_QMAP_ONLY flag set,
+         * so we use that to indicate to skip the step of bringing the parent interface up.
+         */
+        if (!qmi_wwan_only) {
+            /* if the connection is done through a new link, we need to ifup the main interface */
+            if (ctx->link) {
+                mm_obj_dbg (self, "bringing main interface %s up...", mm_port_get_device (ctx->data));
+                mm_port_net_link_setup (MM_PORT_NET (ctx->data),
+                                        TRUE,
+                                        0, /* ignore */
+                                        g_task_get_cancellable (task),
+                                        (GAsyncReadyCallback) main_interface_up_ready,
+                                        task);
+                return;
+            }
+        } else
+            mm_obj_dbg (self, "Not bringing main interface %s", mm_port_get_device (ctx->data));
         ctx->step++;
         /* fall through */
 
