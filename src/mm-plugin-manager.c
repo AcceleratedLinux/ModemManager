@@ -715,11 +715,11 @@ port_context_new (MMPluginManager *self,
 /* Device context */
 
 /* Time to wait for ports to appear before starting to probe the first one */
-#define MIN_WAIT_TIME_MSECS 2000
+#define MIN_WAIT_TIME_MSECS 7500
 
 /* Time to wait for other ports to appear once the first port is exposed
  * (needs to be > MIN_WAIT_TIME_MSECS!!) */
-#define MIN_PROBING_TIME_MSECS 4000
+#define MIN_PROBING_TIME_MSECS 10000
 
 /* Additional time to wait for other ports to appear after the last port is
  * exposed in the system. Longer time when not using udev, as we rely on
