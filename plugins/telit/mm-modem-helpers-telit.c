@@ -852,6 +852,23 @@ mm_telit_build_modes_list (void)
     mode.preferred = MM_MODEM_MODE_NONE;
     g_array_append_val (combinations, mode);
 
+	/* 5G only */
+	mode.allowed = MM_MODEM_MODE_5G;
+	mode.preferred = MM_MODEM_MODE_NONE;
+	g_array_append_val (combinations, mode);
+	/* 3G and 5G */
+	mode.allowed = (MM_MODEM_MODE_3G | MM_MODEM_MODE_5G);
+	mode.preferred = MM_MODEM_MODE_NONE;
+	g_array_append_val (combinations, mode);
+	/* 4G and 5G */
+	mode.allowed = (MM_MODEM_MODE_4G | MM_MODEM_MODE_5G);
+	mode.preferred = MM_MODEM_MODE_NONE;
+	g_array_append_val (combinations, mode);
+	/* 3G, 4G and 5G */
+	mode.allowed = (MM_MODEM_MODE_3G | MM_MODEM_MODE_4G | MM_MODEM_MODE_5G);
+	mode.preferred = MM_MODEM_MODE_NONE;
+	g_array_append_val (combinations, mode);
+
     return combinations;
 }
 
