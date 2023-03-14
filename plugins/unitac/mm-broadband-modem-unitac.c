@@ -137,6 +137,7 @@ signal_load_values_finish (MMIfaceModemSignal *self,
                            MMSignal **gsm,
                            MMSignal **umts,
                            MMSignal **lte,
+                           MMSignal **nr5g,
                            GError **error)
 {
     DetailedSignal *signals;
