@@ -45,22 +45,6 @@ mm_simple_connect_properties_get_number (MMSimpleConnectProperties *self)
 /*****************************************************************************/
 
 void
-mm_bearer_properties_set_number (MMBearerProperties *self,
-                                 const gchar        *number)
-{
-    /* NO-OP */
-}
-
-const gchar *
-mm_bearer_properties_get_number (MMBearerProperties *self)
-{
-    /* NO-OP */
-    return NULL;
-}
-
-/*****************************************************************************/
-
-void
 mm_call_properties_set_direction (MMCallProperties *self,
                                   MMCallDirection   direction)
 {
