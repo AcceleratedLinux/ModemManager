@@ -500,6 +500,7 @@ typedef struct {
     ConnectStep  step;
     MMPort      *data;
     MMPortQmi   *qmi;
+    guint data_profile_index;
 
     MMQmiDataEndpoint  endpoint;
     gboolean           sio_port_failed;
@@ -1377,6 +1378,13 @@ build_start_network_input (ConnectContext *ctx)
             NULL);
     }
 
+    if (ctx->data_profile_index) {
+        mm_obj_dbg (ctx->data,
+            "using 3GPP profile index %d for APN %s",
+            ctx->data_profile_index,
+            ctx->apn);
+        qmi_message_wds_start_network_input_set_profile_index_3gpp (input, ctx->data_profile_index, NULL);
+    }
     return input;
 }
 
@@ -2573,6 +2581,7 @@ _connect (MMBaseBearer        *_self,
     g_autoptr(GCancellable)        operation_cancellable = NULL;
     g_autoptr(MMBaseModem)         modem  = NULL;
     g_autoptr(MMBearerProperties)  properties = NULL;
+    const gchar *number;
 
     operation_cancellable = g_cancellable_new ();
     task = g_task_new (self, operation_cancellable, callback, user_data);
@@ -2591,6 +2600,13 @@ _connect (MMBaseBearer        *_self,
     ctx->step = CONNECT_STEP_FIRST;
     ctx->ip_method = MM_BEARER_IP_METHOD_UNKNOWN;
     g_task_set_task_data (task, ctx, (GDestroyNotify)connect_context_free);
+
+    number = mm_bearer_properties_get_number (mm_base_bearer_peek_config (MM_BASE_BEARER (self)));
+    if (number && *number) {
+        ctx->data_profile_index = g_ascii_strtoull (number, NULL, 10);
+        if (ctx->data_profile_index > 16)
+            ctx->data_profile_index = 0;
+    }
 
     /* Grab a data port */
     ctx->data = mm_base_modem_get_best_data_port (modem, MM_PORT_TYPE_NET);
