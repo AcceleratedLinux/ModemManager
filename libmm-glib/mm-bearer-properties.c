@@ -52,6 +52,7 @@ G_DEFINE_TYPE (MMBearerProperties, mm_bearer_properties, G_TYPE_OBJECT)
  * not apply to any other bearer setting operations like simple connect etc.
  * This property is not sent to the modem*/
 #define PROPERTY_FORCE     "force"
+#define PROPERTY_NUMBER        "number"
 
 /* no longer used properties */
 #define DEPRECATED_PROPERTY_NUMBER "number"
@@ -70,9 +71,55 @@ struct _MMBearerPropertiesPrivate {
     MMModemCdmaRmProtocol rm_protocol;
     /* Multiplex support */
     MMBearerMultiplexSupport multiplex;
+    /* Number */
+    gchar *number;
 };
 
 /*****************************************************************************/
+/**
+ * mm_bearer_properties_set_number:
+ * @self: a #MMBearerProperties.
+ * @number: the number.
+ *
+ * Sets the number to use when performing the connection.
+ *
+ * Since: 1.0
+ * Deprecated: 1.10.0. The number setting is not used anywhere, and therefore
+ * it doesn't make sense to expose it in the ModemManager interface.
+ */
+void
+mm_bearer_properties_set_number (MMBearerProperties *self,
+                                 const gchar *number)
+{
+    g_return_if_fail (MM_IS_BEARER_PROPERTIES (self));
+
+    /* NO-OP */
+    g_free (self->priv->number);
+    self->priv->number = g_strdup (number);
+
+}
+
+/**
+ * mm_bearer_properties_get_number:
+ * @self: a #MMBearerProperties.
+ *
+ * Gets the number to use when performing the connection.
+ *
+ * Returns: (transfer none): the number, or #NULL if not set. Do not free the
+ * returned value, it is owned by @self.
+ *
+ * Since: 1.0
+ * Deprecated: 1.10.0. The number setting is not used anywhere, and therefore
+ * it doesn't make sense to expose it in the ModemManager interface.
+ */
+const gchar *
+mm_bearer_properties_get_number (MMBearerProperties *self)
+{
+    g_return_val_if_fail (MM_IS_BEARER_PROPERTIES (self), NULL);
+
+    /* NO-OP */
+    return self->priv->number;
+}
 
 /**
  * mm_bearer_properties_set_profile_name:
@@ -651,6 +698,12 @@ mm_bearer_properties_get_dictionary (MMBearerProperties *self)
 
     g_variant_builder_init (&builder, G_VARIANT_TYPE ("a{sv}"));
 
+    if (self->priv->number)
+        g_variant_builder_add (&builder,
+                               "{sv}",
+                               PROPERTY_NUMBER,
+                               g_variant_new_string (self->priv->number));
+
     if (self->priv->allow_roaming_set)
         g_variant_builder_add (&builder,
                                "{sv}",
@@ -736,14 +789,14 @@ mm_bearer_properties_consume_string (MMBearerProperties  *self,
         multiplex = mm_common_get_multiplex_support_from_string (value, &inner_error);
         if (!inner_error)
             mm_bearer_properties_set_multiplex (self, multiplex);
-    } else if (g_str_equal (key, DEPRECATED_PROPERTY_NUMBER)) {
-        /* NO-OP */
     } else if (g_str_equal (key, PROPERTY_FORCE)) {
-      gboolean force;
+        gboolean force;
 
         force = mm_common_get_boolean_from_string (value, &inner_error);
         if (!inner_error)
             mm_bearer_properties_set_force (self, force);
+    } else if (g_str_equal (key, PROPERTY_NUMBER)) {
+            mm_bearer_properties_set_number (self, value);
     } else {
         inner_error = g_error_new (MM_CORE_ERROR, MM_CORE_ERROR_UNSUPPORTED,
                                    "Invalid properties string, unsupported key '%s'", key);
@@ -822,10 +875,10 @@ mm_bearer_properties_consume_variant (MMBearerProperties  *self,
         mm_bearer_properties_set_rm_protocol (self, g_variant_get_uint32 (value));
     else if (g_str_equal (key, PROPERTY_MULTIPLEX))
         mm_bearer_properties_set_multiplex (self, g_variant_get_uint32 (value));
-    else if (g_str_equal (key, DEPRECATED_PROPERTY_NUMBER)) {
-        /* NO-OP */
-    } else if (g_str_equal (key, PROPERTY_FORCE))
+    else if (g_str_equal (key, PROPERTY_FORCE))
         mm_bearer_properties_set_force (self, g_variant_get_boolean (value));
+    else if (g_str_equal (key, PROPERTY_NUMBER))
+        mm_bearer_properties_set_number (self, g_variant_get_string (value, NULL));
     else {
         /* Set error */
         g_set_error (error, MM_CORE_ERROR, MM_CORE_ERROR_INVALID_ARGS,
@@ -989,6 +1042,8 @@ mm_bearer_properties_cmp (MMBearerProperties         *a,
     if (!(flags & MM_BEARER_PROPERTIES_CMP_FLAGS_NO_ROAMING_ALLOWANCE) &&
         (mm_3gpp_profile_get_roaming_allowance (a->priv->profile) != mm_3gpp_profile_get_roaming_allowance (b->priv->profile)))
         return FALSE;
+    if (!cmp_str (a->priv->number, b->priv->number, flags))
+        return FALSE;
     if (!(flags & MM_BEARER_PROPERTIES_CMP_FLAGS_NO_ALLOW_ROAMING)) {
         if (a->priv->allow_roaming != b->priv->allow_roaming)
             return FALSE;
@@ -1093,7 +1148,7 @@ finalize (GObject *object)
     MMBearerProperties *self = MM_BEARER_PROPERTIES (object);
 
     g_object_unref (self->priv->profile);
-
+    g_free (self->priv->number);
     G_OBJECT_CLASS (mm_bearer_properties_parent_class)->finalize (object);
 }
 
