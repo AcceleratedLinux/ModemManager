@@ -527,8 +527,18 @@ mm_shared_quectel_setup_sim_hot_swap (MMIfaceModem        *self,
     g_regex_unref (pattern);
     mm_obj_dbg (self, "RDY detection set up");
 
+    /*
+     * DAL-8189: This new code in MM 1.20 exposes the QUSIM unsolicted event from
+     * modem when SIM PIN is issued to unlock SIM. That event causes MM to think
+     * we have a SIM hot swap and the modem gets unmapped and remapped. Commenting
+     * out this line, which wasn't in MM 1.14, masks out the QUSIM event.
+     * The other approach is to issue AT+QINDCFG="all",0 command, but that disables
+     * all URCs from the modem.
+     */
+#if 0
     if (!mm_broadband_modem_sim_hot_swap_ports_context_init (MM_BROADBAND_MODEM (self), &error))
         mm_obj_warn (self, "failed to initialize SIM hot swap ports context: %s", error->message);
+#endif
 
     /* Now, if available, setup parent logic */
     if (priv->iface_modem_parent->setup_sim_hot_swap &&
