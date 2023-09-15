@@ -304,7 +304,7 @@ main (gint argc, gchar **argv)
 
     /* Setup signals */
     signal (SIGINT, signals_handler);
-    signal (SIGHUP, signals_handler);
+    signal (SIGHUP, SIG_IGN);
     signal (SIGTERM, signals_handler);
 
     /* Setup dbus connection to use */
