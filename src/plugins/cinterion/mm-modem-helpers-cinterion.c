@@ -773,6 +773,10 @@ out:
  * Example (ELS61-E2):
  *   AT^SXRAT=?
  *   ^SXRAT: (0-6),(0,2,3),(0,2,3)
+ *
+ * Example (PLS63-W):
+ *   AT^SXRAT=?
+ *   ^SXRAT: (0-6), (0,2,3), (0,2,3)
  */
 
 gboolean
