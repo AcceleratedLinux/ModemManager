@@ -565,8 +565,13 @@ initialize_preallocated_links_next (GTask *task)
         return;
     }
 
+    guint initial_mux_id = mm_kernel_device_get_global_property_as_int (mm_port_peek_kernel_device (ctx->data), "ID_MM_TELIT_INITIAL_MUX_ID");
+    mm_obj_dbg (self, "ID_MM_TELIT_INITIAL_MUX_ID = %d", initial_mux_id);
+    if (initial_mux_id == 0)
+        initial_mux_id = 1;
+
     qmi_device_add_link (self->priv->qmi_device,
-                         ctx->preallocated_links->len + 1,
+                         ctx->preallocated_links->len + initial_mux_id,
                          mm_kernel_device_get_name (mm_port_peek_kernel_device (ctx->data)),
                          "ignored", /* n/a in qmi_wwan add_mux */
                          NULL,
