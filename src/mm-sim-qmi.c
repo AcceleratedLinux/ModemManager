@@ -1963,8 +1963,14 @@ mm_sim_qmi_class_init (MMSimQmiClass *klass)
     base_sim_class->load_sim_identifier_finish = load_sim_identifier_finish;
     base_sim_class->load_imsi = load_imsi;
     base_sim_class->load_imsi_finish = load_imsi_finish;
+    /* NOTE: QMI does not preserve leading zeroes on MNC values, as it provides
+     * them as integers. Not setting these function pointer here causes us to
+     * default to using the methods in mm-base-sim.c, which will preserve any
+     * leading zeroes. See DAL-9585 for more information. */
+#if 0
     base_sim_class->load_operator_identifier = load_operator_identifier;
     base_sim_class->load_operator_identifier_finish = load_operator_identifier_finish;
+#endif
     base_sim_class->load_operator_name = load_operator_name;
     base_sim_class->load_operator_name_finish = load_operator_name_finish;
     base_sim_class->load_gid1 = load_gid1;
