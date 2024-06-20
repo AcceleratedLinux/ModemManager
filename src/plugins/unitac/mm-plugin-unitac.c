@@ -17,11 +17,15 @@
 #include <string.h>
 #include <gmodule.h>
 
-#include "mm-plugin-unitac.h"
-#include "../../mm-private-boxed-types.h"
-#include "mm-broadband-modem-unitac.h"
+#define _LIBMM_INSIDE_MM
+#include <libmm-glib.h>
 
-G_DEFINE_TYPE (MMPluginUnitac, mm_plugin_unitac, MM_TYPE_PLUGIN)
+#include "mm-private-boxed-types.h"
+#include "mm-broadband-modem-unitac.h"
+#include "mm-plugin-common.h"
+
+#define MM_TYPE_PLUGIN_UNITAC mm_plugin_unitac_get_type ()
+MM_DEFINE_PLUGIN (UNITAC, unitac, Unitac)
 
 /*****************************************************************************/
 
@@ -44,8 +48,8 @@ create_modem (MMPlugin *self,
                                                          product));
 }
 
-G_MODULE_EXPORT MMPlugin *
-mm_plugin_create (void)
+MM_PLUGIN_NAMED_CREATOR_SCOPE MMPlugin *
+mm_plugin_create_unitac (void)
 {
     static const gchar *subsystems[] = { "tty", "net", "usb", NULL };
     static const guint16 vendor_ids[] = { 0x1076, 0 };
@@ -55,7 +59,7 @@ mm_plugin_create (void)
                       MM_PLUGIN_NAME,               MM_MODULE_NAME,
                       MM_PLUGIN_ALLOWED_SUBSYSTEMS, subsystems,
                       MM_PLUGIN_ALLOWED_VENDOR_IDS, vendor_ids,
-                      MM_PLUGIN_ALLOWED_SINGLE_AT,  TRUE,
+                      MM_PLUGIN_ALLOWED_AT,         TRUE,
                       MM_PLUGIN_ALLOWED_QCDM,       FALSE,
                       MM_PLUGIN_ALLOWED_QMI,        FALSE,
                       MM_PLUGIN_ALLOWED_MBIM,       FALSE,
@@ -74,4 +78,3 @@ mm_plugin_unitac_class_init (MMPluginUnitacClass *klass)
 
     plugin_class->create_modem = create_modem;
 }
-

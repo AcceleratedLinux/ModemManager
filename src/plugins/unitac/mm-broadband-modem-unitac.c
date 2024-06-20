@@ -22,17 +22,17 @@
 #include <unistd.h>
 #include <ctype.h>
 
-#include "../../../include/ModemManager.h"
-#include "../../mm-log-object.h"
-#include "../../mm-iface-modem.h"
-#include "../../mm-iface-modem-3gpp.h"
-#include "../../mm-base-modem-at.h"
-#include "../../mm-broadband-bearer.h"
+#include "ModemManager.h"
+#include "mm-log-object.h"
+#include "mm-iface-modem.h"
+#include "mm-iface-modem-3gpp.h"
+#include "mm-base-modem-at.h"
+#include "mm-broadband-bearer.h"
 #include "mm-broadband-modem-unitac.h"
 #include "mm-broadband-bearer-unitac.h"
 #include "mm-sim-unitac.h"
-#include "../../mm-iface-modem-signal.h"
-#include "../../mm-modem-helpers.h"
+#include "mm-iface-modem-signal.h"
+#include "mm-modem-helpers.h"
 #include "mm-modem-helpers-unitac.h"
 #include "mm-sim-unitac.h"
 
@@ -430,7 +430,7 @@ load_current_bands (MMIfaceModem *_self,
 /* Load supported bands (Modem interface) */
 
 static GArray *
-load_supported_bands_finish (MMIfaceModem *self,
+load_supported_bands_finish (MMBaseModem  *self,
                              GAsyncResult *res,
                              GError **error)
 {

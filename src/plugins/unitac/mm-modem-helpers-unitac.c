@@ -17,8 +17,8 @@
 #include <string.h>
 #include <arpa/inet.h>
 
-#include "../../mm-log.h"
-#include "../../mm-modem-helpers.h"
+#include "mm-log.h"
+#include "mm-modem-helpers.h"
 #include "mm-modem-helpers-unitac.h"
 
 /*****************************************************************************/

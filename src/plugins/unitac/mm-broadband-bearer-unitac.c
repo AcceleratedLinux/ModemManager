@@ -27,9 +27,9 @@
 #include <libmm-glib.h>
 
 #include "mm-broadband-bearer-unitac.h"
-#include "../../mm-base-modem-at.h"
-#include "../../mm-log-object.h"
-#include "../../mm-modem-helpers.h"
+#include "mm-base-modem-at.h"
+#include "mm-log-object.h"
+#include "mm-modem-helpers.h"
 #include "mm-modem-helpers-unitac.h"
 
 G_DEFINE_TYPE (MMBroadbandBearerUnitac, mm_broadband_bearer_unitac, MM_TYPE_BROADBAND_BEARER)
@@ -524,10 +524,8 @@ cgatt_attach_ready (MMBaseModem  *modem,
 static void
 dial_3gpp_context_step (GTask *task)
 {
-    MMBroadbandBearerUnitac *self;
     CommonConnectContext    *ctx;
 
-    self = g_task_get_source_object (task);
     ctx = g_task_get_task_data (task);
 
     if (g_task_return_error_if_cancelled (task)) {

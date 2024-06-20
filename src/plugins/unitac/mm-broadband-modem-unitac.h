@@ -16,7 +16,7 @@
 #ifndef MM_BROADBAND_MODEM_UNITAC_H
 #define MM_BROADBAND_MODEM_UNITAC_H
 
-#include "../../mm-broadband-modem.h"
+#include "mm-broadband-modem.h"
 
 #define MM_TYPE_BROADBAND_MODEM_UNITAC            (mm_broadband_modem_unitac_get_type ())
 #define MM_BROADBAND_MODEM_UNITAC(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), MM_TYPE_BROADBAND_MODEM_UNITAC, MMBroadbandModemUnitac))
@@ -28,8 +28,6 @@
 typedef struct _MMBroadbandModemUnitac MMBroadbandModemUnitac;
 typedef struct _MMBroadbandModemUnitacClass MMBroadbandModemUnitacClass;
 typedef struct _MMBroadbandModemUnitacPrivate MMBroadbandModemUnitacPrivate;
-
-
 
 struct _MMBroadbandModemUnitac {
     MMBroadbandModem parent;

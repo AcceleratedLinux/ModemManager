@@ -8,11 +8,11 @@ LABEL="mm_unitac_port_types"
 SUBSYSTEMS=="usb", ATTRS{bInterfaceNumber}=="?*", ENV{.MM_USBIFNUM}="$attr{bInterfaceNumber}"
 
 # ML620EU -> wmode=router, used for firmware update
-ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9082", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9082", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9082", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
 
 # ML620EU -> wmode=bridge-ecm, used for LTE connection
-ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9003", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9003", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1076", ATTRS{idProduct}=="9003", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_IGNORE}="1"
 
 LABEL="mm_unitac_port_types_end"

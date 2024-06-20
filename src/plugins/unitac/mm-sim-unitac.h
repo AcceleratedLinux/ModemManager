@@ -19,7 +19,7 @@
 #include <glib.h>
 #include <glib-object.h>
 
-#include "../../mm-base-sim.h"
+#include "mm-base-sim.h"
 
 #define MM_TYPE_SIM_UNITAC            (mm_sim_unitac_get_type ())
 #define MM_SIM_UNITAC(obj)            (G_TYPE_CHECK_INSTANCE_CAST ((obj), MM_TYPE_SIM_UNITAC, MMSimUnitac))
@@ -42,10 +42,10 @@ struct _MMSimUnitacClass {
 GType mm_sim_unitac_get_type (void);
 
 void       mm_sim_unitac_new        (MMBaseModem         *modem,
-                                    GCancellable         *cancellable,
-                                    GAsyncReadyCallback  callback,
-                                    gpointer             user_data);
+                                     GCancellable         *cancellable,
+                                     GAsyncReadyCallback  callback,
+                                     gpointer             user_data);
 MMBaseSim *mm_sim_unitac_new_finish (GAsyncResult        *res,
-                                    GError               **error);
+                                     GError               **error);
 
 #endif /* MM_SIM_UNITAC_H */
