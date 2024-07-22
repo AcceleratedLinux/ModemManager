@@ -52,6 +52,7 @@
 #include "mm-sms-part-cdma.h"
 #include "mm-call-qmi.h"
 #include "mm-call-list.h"
+#include "mm-base-modem-at.h"
 
 static void iface_modem_init (MMIfaceModem *iface);
 static void iface_modem_3gpp_init (MMIfaceModem3gpp *iface);
@@ -7397,7 +7398,7 @@ modem_3gpp_profile_manager_check_support (MMIfaceModem3gppProfileManager  *self,
             "+GMM",
             3,
             TRUE, /* allow caching, it's a test command */
-            (GAsyncReadyCallback)profile_manager_gmm_test_ready,
+            (GAsyncReadyCallback) profile_manager_gmm_test_ready,
             task);
 }
 
