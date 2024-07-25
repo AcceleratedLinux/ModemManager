@@ -7346,7 +7346,7 @@ modem_3gpp_profile_manager_check_support_finish (MMIfaceModem3gppProfileManager 
 static gboolean
 skip_profile_manager(MMBaseModem *self, const gchar *response)
 {
-    if (strstr (response, "ME910C1-WW")) {
+    if (strstr (response, "ME910C1-WW") || strstr(response, "EC25")) {
         return TRUE;
     }
 
