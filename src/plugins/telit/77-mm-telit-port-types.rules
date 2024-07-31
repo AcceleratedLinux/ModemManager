@@ -86,6 +86,12 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1061", ENV{.MM_USBIFNUM}=="05", SUBS
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1061", ENV{.MM_USBIFNUM}=="06", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1061", ENV{.MM_USBIFNUM}=="07", ENV{ID_MM_PORT_IGNORE}="1"
 
+# FN920
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{ID_MM_TELIT_PORT_DELAY}="1"
+
 # FN990
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1070", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1070", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
