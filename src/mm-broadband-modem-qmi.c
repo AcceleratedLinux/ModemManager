@@ -7343,63 +7343,17 @@ modem_3gpp_profile_manager_check_support_finish (MMIfaceModem3gppProfileManager 
     return g_task_propagate_boolean (G_TASK (res), error);
 }
 
-static gboolean
-skip_profile_manager(MMBaseModem *self, const gchar *response)
-{
-    if (strstr (response, "ME910C1-WW") || strstr(response, "EC25")) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-static void
-profile_manager_gmm_test_ready (MMBaseModem  *self,
-                                GAsyncResult *res,
-                                GTask        *task)
-{
-    GError *error = NULL;
-
-    const gchar *response = mm_base_modem_at_command_finish (self, res, &error);
-    if (error || !response) {
-        mm_obj_dbg (self, "Profile Manager supported");
-        g_task_return_boolean(task, TRUE);
-    } else {
-        if (skip_profile_manager(self, response)) {
-            mm_obj_dbg (self, "Profile Manager not supported");
-            g_task_return_boolean(task, FALSE);
-        } else {
-            mm_obj_dbg (self, "Profile Manager supported");
-            g_task_return_boolean(task, TRUE);
-        }
-    }
-    g_object_unref (task);
-}
-
 static void
 modem_3gpp_profile_manager_check_support (MMIfaceModem3gppProfileManager  *self,
                                           GAsyncReadyCallback              callback,
                                           gpointer                         user_data)
 {
     GTask *task;
+    mm_obj_dbg (self, "Disabling Profile Manager support...");
 
     task = g_task_new (self, NULL, callback, user_data);
-    if (!mm_iface_modem_is_3gpp (MM_IFACE_MODEM (self))) {
-        g_task_return_boolean (task, FALSE);
-        g_object_unref (task);
-        return;
-    }
-
-    mm_obj_dbg (self, "Checking Profile Manager support...");
-
-    /* Query with +GMM */
-    mm_base_modem_at_command (
-            MM_BASE_MODEM (self),
-            "+GMM",
-            3,
-            TRUE, /* allow caching, it's a test command */
-            (GAsyncReadyCallback) profile_manager_gmm_test_ready,
-            task);
+    g_task_return_boolean (task, FALSE);
+    g_object_unref (task);
 }
 
 /*****************************************************************************/
