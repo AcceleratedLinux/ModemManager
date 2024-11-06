@@ -527,7 +527,10 @@ mm_shared_quectel_setup_sim_hot_swap (MMIfaceModem        *self,
                 NULL);
     }
 
-    g_regex_unref (pattern);
+    // Removing this unref prevents a crash. Refer to other instances where
+    // mm_port_serial_at_add_unsolicited_msg_handler is used, and note that
+    // the g_regex_new pattern is not freed, freed in finalize() in mm-port-seria-at.c
+    //g_regex_unref (pattern);
     mm_obj_dbg (self, "RDY detection set up");
 
     /*
