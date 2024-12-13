@@ -88,7 +88,9 @@ ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b7", ENV{.MM_USBIFNUM}=="03", ENV{
 #  ttyACM1 (if #2): AT port
 #  ttyACM3 (if #4): NMEA/GPS port
 #  ttyACM4 (if #5): Diag port
-ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+# Commented out the ID_MM_PORT_TYPE_AT_PRIMARY for the AT port. This allows the Cinterion plugin to continue
+# probing the AT port, ensuring it is used only when the port is ready and available.
+#ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1e2d", ATTRS{idProduct}=="00b8", ENV{.MM_USBIFNUM}=="05", ENV{ID_MM_PORT_IGNORE}="1"
 
