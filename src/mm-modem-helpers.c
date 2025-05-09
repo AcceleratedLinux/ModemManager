@@ -3432,7 +3432,6 @@ mm_3gpp_parse_cmer_test_response (const gchar     *response,
     GError          *inner_error = NULL;
     GArray          *array_supported_modes = NULL;
     GArray          *array_supported_inds = NULL;
-    gchar           *aux   = NULL;
     gboolean         ret = FALSE;
     MM3gppCmerMode   supported_modes = 0;
     MM3gppCmerInd    supported_inds = 0;
@@ -3464,12 +3463,10 @@ mm_3gpp_parse_cmer_test_response (const gchar     *response,
     /* Modes in 1st group */
     if (!(array_supported_modes = mm_parse_uint_list (split[0], &inner_error)))
         goto out;
-    g_clear_pointer (&aux, g_free);
 
     /* Ind settings in 4th group */
     if (!(array_supported_inds = mm_parse_uint_list (split[3], &inner_error)))
         goto out;
-    g_clear_pointer (&aux, g_free);
 
     for (i = 0; i < array_supported_modes->len; i++) {
         guint mode_val;
@@ -3503,7 +3500,6 @@ out:
         g_array_unref (array_supported_modes);
     if (array_supported_inds)
         g_array_unref (array_supported_inds);
-    g_clear_pointer (&aux, g_free);
 
     g_strfreev (split);
 
