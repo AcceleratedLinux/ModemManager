@@ -53,6 +53,7 @@ G_DEFINE_TYPE (MMBearerProperties, mm_bearer_properties, G_TYPE_OBJECT)
  * This property is not sent to the modem*/
 #define PROPERTY_FORCE     "force"
 #define PROPERTY_NUMBER        "number"
+#define PROPERTY_SESSION_ID    "session-id"
 
 /* no longer used properties */
 #define DEPRECATED_PROPERTY_NUMBER "number"
@@ -73,6 +74,9 @@ struct _MMBearerPropertiesPrivate {
     MMBearerMultiplexSupport multiplex;
     /* Number */
     gchar *number;
+    /* Session ID */
+    guint32 session_id;
+    gboolean session_id_set;
 };
 
 /*****************************************************************************/
@@ -728,6 +732,12 @@ mm_bearer_properties_get_dictionary (MMBearerProperties *self)
                                PROPERTY_FORCE,
                                g_variant_new_boolean (self->priv->force));
 
+    /* Add session-id if set */
+    if (self->priv->session_id_set)
+        g_variant_builder_add (&builder,
+                               "{sv}",
+                               PROPERTY_SESSION_ID,
+                               g_variant_new_uint32 (self->priv->session_id));
 
     /* Merge dictionaries */
     profile_dictionary = mm_3gpp_profile_get_dictionary (self->priv->profile);
@@ -796,7 +806,14 @@ mm_bearer_properties_consume_string (MMBearerProperties  *self,
         if (!inner_error)
             mm_bearer_properties_set_force (self, force);
     } else if (g_str_equal (key, PROPERTY_NUMBER)) {
-            mm_bearer_properties_set_number (self, value);
+        mm_bearer_properties_set_number (self, value);
+    } else if (g_str_equal (key, PROPERTY_SESSION_ID)) {
+        guint32 session_id;
+        if (!mm_common_get_uint_from_string (value, &session_id, &inner_error)) {
+            g_propagate_error (error, inner_error);
+            return FALSE;
+        }
+        mm_bearer_properties_set_session_id (self, session_id);
     } else {
         inner_error = g_error_new (MM_CORE_ERROR, MM_CORE_ERROR_UNSUPPORTED,
                                    "Invalid properties string, unsupported key '%s'", key);
@@ -879,6 +896,8 @@ mm_bearer_properties_consume_variant (MMBearerProperties  *self,
         mm_bearer_properties_set_force (self, g_variant_get_boolean (value));
     else if (g_str_equal (key, PROPERTY_NUMBER))
         mm_bearer_properties_set_number (self, g_variant_get_string (value, NULL));
+    else if (g_str_equal (key, PROPERTY_SESSION_ID))
+        mm_bearer_properties_set_session_id (self, g_variant_get_uint32 (value));
     else {
         /* Set error */
         g_set_error (error, MM_CORE_ERROR, MM_CORE_ERROR_INVALID_ARGS,
@@ -1088,6 +1107,9 @@ mm_bearer_properties_print (MMBearerProperties *self,
         aux = mm_common_str_boolean (self->priv->force);
         g_ptr_array_add (array, g_strdup_printf (PROPERTY_FORCE ": %s", aux));
     }
+    if (self->priv->session_id_set) {
+        g_ptr_array_add (array, g_strdup_printf (PROPERTY_SESSION_ID ": %u", self->priv->session_id));
+    }
     return array;
 }
 
@@ -1140,6 +1162,8 @@ mm_bearer_properties_init (MMBearerProperties *self)
     self->priv->rm_protocol = MM_MODEM_CDMA_RM_PROTOCOL_UNKNOWN;
     self->priv->multiplex = MM_BEARER_MULTIPLEX_SUPPORT_UNKNOWN;
     self->priv->force = FALSE;
+    self->priv->session_id = 0;
+    self->priv->session_id_set = FALSE;
 }
 
 static void
@@ -1160,4 +1184,59 @@ mm_bearer_properties_class_init (MMBearerPropertiesClass *klass)
     g_type_class_add_private (object_class, sizeof (MMBearerPropertiesPrivate));
 
     object_class->finalize = finalize;
+}
+
+/**
+ * mm_bearer_properties_set_session_id:
+ * @self: a #MMBearerProperties.
+ * @session_id: the session ID to use.
+ *
+ * Sets the session ID to use when performing the connection.
+ *
+ * Since: 1.20
+ */
+void
+mm_bearer_properties_set_session_id (MMBearerProperties *self,
+                                    guint32 session_id)
+{
+    g_return_if_fail (MM_IS_BEARER_PROPERTIES (self));
+
+    self->priv->session_id = session_id;
+    self->priv->session_id_set = TRUE;
+}
+
+/**
+ * mm_bearer_properties_get_session_id:
+ * @self: a #MMBearerProperties.
+ *
+ * Gets the session ID to use when performing the connection.
+ *
+ * Returns: the session ID, or 0 if not set.
+ *
+ * Since: 1.20
+ */
+guint32
+mm_bearer_properties_get_session_id (MMBearerProperties *self)
+{
+    g_return_val_if_fail (MM_IS_BEARER_PROPERTIES (self), 0);
+
+    return self->priv->session_id;
+}
+
+/**
+ * mm_bearer_properties_is_session_id_set:
+ * @self: a #MMBearerProperties.
+ *
+ * Checks if the session ID has been set.
+ *
+ * Returns: %TRUE if the session ID has been set, %FALSE otherwise.
+ *
+ * Since: 1.20
+ */
+gboolean
+mm_bearer_properties_is_session_id_set (MMBearerProperties *self)
+{
+    g_return_val_if_fail (MM_IS_BEARER_PROPERTIES (self), FALSE);
+
+    return self->priv->session_id_set;
 }
