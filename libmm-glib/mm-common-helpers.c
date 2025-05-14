@@ -2134,3 +2134,39 @@ mm_common_error_to_tuple (const GError *error)
 
     return g_variant_ref_sink (g_variant_new_tuple (tuple, 2));
 }
+
+/**
+ * mm_common_get_uint_from_string:
+ * @str: string to parse
+ * @out: output uint32 value
+ * @error: return location for error or %NULL
+ *
+ * Parse a uint32 value from a string.
+ *
+ * Returns: %TRUE if successful, %FALSE otherwise
+ */
+gboolean
+mm_common_get_uint_from_string (const gchar *str,
+                               guint32     *out,
+                               GError     **error)
+{
+    gchar *end = NULL;
+    gulong val;
+
+    g_return_val_if_fail (str != NULL, FALSE);
+    g_return_val_if_fail (out != NULL, FALSE);
+
+    errno = 0;
+    val = strtoul (str, &end, 10);
+    if (errno || !end || *end != '\0' || val > G_MAXUINT32) {
+        g_set_error (error,
+                    MM_CORE_ERROR,
+                    MM_CORE_ERROR_INVALID_ARGS,
+                    "Invalid uint32 value: '%s'",
+                    str);
+        return FALSE;
+    }
+
+    *out = (guint32)val;
+    return TRUE;
+}

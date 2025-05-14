@@ -248,6 +248,7 @@ static FieldInfo field_infos[] = {
     [MMC_F_BEARER_PROPERTIES_RM_PROTOCOL]            = { "bearer.properties.rm-protocol",                   "rm protocol",              MMC_S_BEARER_PROPERTIES,          },
     [MMC_F_BEARER_PROPERTIES_ACCESS_TYPE_PREFERENCE] = { "bearer.properties.access-type-preference",        "access type preference",   MMC_S_BEARER_PROPERTIES,          },
     [MMC_F_BEARER_PROPERTIES_ROAMING_ALLOWANCE]      = { "bearer.properties.roaming-allowance",             "roaming allowance",        MMC_S_BEARER_PROPERTIES,          },
+    [MMC_F_BEARER_PROPERTIES_SESSION_ID]             = { "bearer.properties.session-id",                    "session id",               MMC_S_BEARER_PROPERTIES,          },
     [MMC_F_BEARER_IPV4_CONFIG_METHOD]                = { "bearer.ipv4-config.method",                       "method",                   MMC_S_BEARER_IPV4_CONFIG,         },
     [MMC_F_BEARER_IPV4_CONFIG_ADDRESS]               = { "bearer.ipv4-config.address",                      "address",                  MMC_S_BEARER_IPV4_CONFIG,         },
     [MMC_F_BEARER_IPV4_CONFIG_PREFIX]                = { "bearer.ipv4-config.prefix",                       "prefix",                   MMC_S_BEARER_IPV4_CONFIG,         },

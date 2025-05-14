@@ -248,4 +248,8 @@ GError   *mm_common_error_from_tuple (GVariant      *tuple,
                                       GError       **error);
 GVariant *mm_common_error_to_tuple   (const GError  *error);
 
+gboolean mm_common_get_uint_from_string (const gchar *str,
+                                       guint32     *out,
+                                       GError     **error);
+
 #endif /* MM_COMMON_HELPERS_H */

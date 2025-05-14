@@ -33,6 +33,7 @@
 #include "mm-bearer-mbim.h"
 #include "mm-log-object.h"
 #include "mm-context.h"
+#include "mm-bearer-properties.h"
 
 G_DEFINE_TYPE (MMBearerMbim, mm_bearer_mbim, MM_TYPE_BASE_BEARER)
 
@@ -664,6 +665,7 @@ connect_set_ready (MbimDevice   *device,
 
     /* always parse, because on failure we also check the NwError */
     mbim_message_response_get_result (response, MBIM_MESSAGE_TYPE_COMMAND_DONE, &error);
+    mm_obj_dbg (self, "Using session_id=%u", ctx->session_id);
 
     if (mbim_device_check_ms_mbimex_version (device, 3, 0)) {
         if (!mbim_message_ms_basic_connect_v3_connect_response_parse (
@@ -1105,6 +1107,15 @@ connect_context_step (GTask *task)
 
     case CONNECT_STEP_CONNECT: {
         MbimDevice *device;
+        MMBearerProperties *properties = NULL;
+        g_object_get (self, MM_BASE_BEARER_CONFIG, &properties, NULL);
+        if (properties) {
+            if (mm_bearer_properties_is_session_id_set(properties)) {
+                ctx->session_id = mm_bearer_properties_get_session_id(properties);
+                mm_obj_dbg (self, "Forcing session_id from properties: %u", ctx->session_id);
+            }
+            g_object_unref(properties);
+        }
 
         mm_obj_dbg (self, "launching %s connection in session %u...",
                     mbim_context_ip_type_get_string (ctx->requested_ip_type), ctx->session_id);
@@ -1220,6 +1231,12 @@ load_settings_from_bearer (MMBearerMbim        *self,
     guint                     current_multiplexed_bearers;
     guint                     max_multiplexed_bearers;
     const gchar              *data_port_driver;
+
+    /* Get session ID if set */
+    if (mm_bearer_properties_is_session_id_set (properties)) {
+        ctx->session_id = mm_bearer_properties_get_session_id (properties);
+        mm_obj_dbg (self, "Using session-id=%u", ctx->session_id);
+    }
 
     if (!mm_broadband_modem_get_active_multiplexed_bearers (MM_BROADBAND_MODEM (ctx->modem),
                                                             &current_multiplexed_bearers,

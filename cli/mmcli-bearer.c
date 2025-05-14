@@ -176,6 +176,7 @@ print_bearer_info (MMBearer *bearer)
         const gchar *access_type_preference_str = NULL;
         gchar       *roaming_allowance_str = NULL;
         const gchar *number = NULL;
+        guint32 session_id = 0;
 
         if (properties) {
             gint properties_profile_id;
@@ -197,6 +198,7 @@ print_bearer_info (MMBearer *bearer)
             }
             access_type_preference_str = mm_bearer_access_type_preference_get_string (mm_bearer_properties_get_access_type_preference (properties));
             roaming_allowance_str      = mm_bearer_roaming_allowance_build_string_from_mask (mm_bearer_properties_get_roaming_allowance (properties));
+            session_id = mm_bearer_properties_get_session_id(properties);
         }
 
         mmcli_output_string_take      (MMC_F_BEARER_PROPERTIES_PROFILE_ID,             properties_profile_id_str);
@@ -211,6 +213,8 @@ print_bearer_info (MMBearer *bearer)
         mmcli_output_string           (MMC_F_BEARER_PROPERTIES_ACCESS_TYPE_PREFERENCE, access_type_preference_str);
         mmcli_output_string_take      (MMC_F_BEARER_PROPERTIES_ROAMING_ALLOWANCE,      roaming_allowance_str);
         mmcli_output_string           (MMC_F_BEARER_PROPERTIES_NUMBER,                 number);
+        if (mm_bearer_properties_is_session_id_set(properties))
+            mmcli_output_string_take  (MMC_F_BEARER_PROPERTIES_SESSION_ID,             g_strdup_printf("%u", session_id));
     }
 
     /* IPv4 config */
