@@ -558,7 +558,9 @@ typedef enum { /*< underscore_name=mm_modem_band >*/
     MM_MODEM_BAND_EUTRAN_69 = 99,
     MM_MODEM_BAND_EUTRAN_70 = 100,
     MM_MODEM_BAND_EUTRAN_71 = 101,
+    MM_MODEM_BAND_EUTRAN_72 = 102,
     MM_MODEM_BAND_EUTRAN_85 = 115,
+    MM_MODEM_BAND_EUTRAN_87 = 117,
     /* CDMA Band Classes (see 3GPP2 C.S0057-C) */
     MM_MODEM_BAND_CDMA_BC0  = 128,
     MM_MODEM_BAND_CDMA_BC1  = 129,
