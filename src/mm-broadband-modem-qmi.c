@@ -7515,6 +7515,32 @@ modem_3gpp_profile_manager_setup_unsolicited_events (MMIfaceModem3gppProfileMana
 }
 
 /*****************************************************************************/
+/* Check support (3GPP profile management interface) */
+
+static gboolean
+modem_3gpp_profile_manager_check_support_finish (MMIfaceModem3gppProfileManager  *self,
+                                                 GAsyncResult                    *res,
+                                                 gchar                          **index_field,
+                                                 GError                         **error)
+{
+    return g_task_propagate_boolean (G_TASK (res), error);
+}
+
+static void
+modem_3gpp_profile_manager_check_support (MMIfaceModem3gppProfileManager  *self,
+                                          GAsyncReadyCallback              callback,
+                                          gpointer                         user_data)
+{
+    GTask *task;
+
+    task = g_task_new (self, NULL, callback, user_data);
+
+    mm_obj_dbg (self, "Disabling Profile Manager support...");
+    g_task_return_boolean (task, FALSE);
+    g_object_unref (task);
+}
+
+/*****************************************************************************/
 /* Check support (Messaging interface) */
 
 static gboolean
@@ -14172,8 +14198,8 @@ iface_modem_3gpp_profile_manager_init (MMIfaceModem3gppProfileManagerInterface *
 {
     /* No explicit check support for the profile management feature, just
      * rely on the generic way to check for support */
-    iface->check_support = NULL;
-    iface->check_support_finish = NULL;
+    iface->check_support = modem_3gpp_profile_manager_check_support;
+    iface->check_support_finish = modem_3gpp_profile_manager_check_support_finish;
 
     iface->setup_unsolicited_events = modem_3gpp_profile_manager_setup_unsolicited_events;
     iface->setup_unsolicited_events_finish = modem_3gpp_profile_manager_setup_cleanup_unsolicited_events_finish;
