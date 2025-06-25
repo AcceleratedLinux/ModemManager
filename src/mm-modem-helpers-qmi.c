@@ -3418,11 +3418,39 @@ error_from_wds_verbose_call_end_reason_3gpp (QmiWdsVerboseCallEndReason3gpp  vce
     return error;
 }
 
+void
+mm_call_end_notify (gchar                          *bearer_path,
+                    MMBearerIpFamily               ip_type,
+                    gchar                          *cer_str,
+                    gchar                          *vcer_type_str,
+                    gchar                          *vcer_reason_str,
+                    QmiWdsCallEndReason            cer,
+                    QmiWdsVerboseCallEndReasonType vcer_type,
+                    gint16                         vcer_reason)
+{
+    char *str = NULL;
+
+    if (asprintf (&str, "mm-call-end-notify.sh \"%s\" \"%s\" \"%s %s %s (%u,%u,%u)\"",
+        bearer_path,
+        ip_type == MM_BEARER_IP_FAMILY_NONE ? "" : ip_type == MM_BEARER_IP_FAMILY_IPV4 ? "ipv4" : "ipv6",
+        cer_str ?: "",
+        vcer_type_str ?: "",
+        vcer_reason_str ?: "",
+        cer,
+        vcer_type,
+        vcer_reason) != -1) {
+
+        system (str);
+        free (str);
+    }
+}
+
 GError *
 mm_error_from_wds_verbose_call_end_reason (QmiWdsVerboseCallEndReasonType vcer_type,
                                            guint                          vcer_reason,
                                            MMBearerIpFamily               ip_type,
-                                           gpointer                       log_object)
+                                           gpointer                       log_object,
+                                           gchar                          *bearer_path)
 {
     GError      *error = NULL;
     const gchar *vcer_type_str;
@@ -3432,6 +3460,8 @@ mm_error_from_wds_verbose_call_end_reason (QmiWdsVerboseCallEndReasonType vcer_t
     vcer_reason_str = qmi_wds_verbose_call_end_reason_get_string (vcer_type, vcer_reason);
     mm_obj_msg (log_object, "verbose call end reason (%u,%d): [%s] %s",
                 vcer_type, vcer_reason, vcer_type_str, vcer_reason_str);
+
+    mm_call_end_notify (bearer_path, ip_type, NULL, vcer_type_str, vcer_reason_str, 0, vcer_type, vcer_reason);
 
     switch (vcer_type) {
         case QMI_WDS_VERBOSE_CALL_END_REASON_TYPE_INTERNAL:

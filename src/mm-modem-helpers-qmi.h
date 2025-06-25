@@ -259,10 +259,19 @@ gboolean qmi_personalization_feature_from_mm_modem_3gpp_facility (MMModem3gppFac
 /* MM error translations */
 
 void      mm_register_qmi_errors                    (void);
+void mm_call_end_notify (gchar                          *bearer_path,
+                         MMBearerIpFamily               ip_type,
+                         gchar                          *cer_str,
+                         gchar                          *vcer_type_str,
+                         gchar                          *vcer_reason_str,
+                         QmiWdsCallEndReason            cer,
+                         QmiWdsVerboseCallEndReasonType vcer_type,
+                         gint16                         vcer_reason);
 GError   *mm_error_from_wds_verbose_call_end_reason (QmiWdsVerboseCallEndReasonType   vcer_type,
                                                      guint                            vcer_reason,
                                                      MMBearerIpFamily                 ip_type,
-                                                     gpointer                         log_object);
+                                                     gpointer                         log_object,
+                                                     gchar                            *bearer_path);
 gboolean  mm_error_from_qmi_loc_indication_status   (QmiLocIndicationStatus           status,
                                                      GError                         **error);
 
