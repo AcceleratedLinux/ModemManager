@@ -3544,7 +3544,7 @@ get_plmn_name_ready (QmiClientNas *client,
                 } else if (short_name) {
                     mm_obj_dbg (self, "setting operator description to short name: %s", short_name);
                     self->priv->current_operator_description = g_steal_pointer (&short_name);
-                } else if (service_name) {
+                } else if (service_name && g_strcmp0 (service_name, "DATA ONLY") != 0) {
                     mm_obj_dbg (self, "setting operator description to service name: %s", service_name);
                     self->priv->current_operator_description = g_steal_pointer (&service_name);
                 } else {
