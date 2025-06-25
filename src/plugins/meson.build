@@ -1038,6 +1038,30 @@ if plugins_options['ublox']
   plugins_udev_rules += files('ublox/77-mm-ublox-port-types.rules')
 endif
 
+# plugin: unitac
+if plugins_options['unitac']
+  unitac_inc = include_directories('unitac')
+
+  common_c_args = '-DMM_MODULE_NAME="unitac"'
+
+  headers = files('unitac/mm-modem-helpers-unitac.h')
+
+  sources = files(
+    'unitac/mm-plugin-unitac.c',
+    'unitac/mm-broadband-bearer-unitac.c',
+    'unitac/mm-broadband-modem-unitac.c',
+    'unitac/mm-sim-unitac.c',
+  )
+
+  plugins += {'plugin-unitac': {
+                'plugin': true,
+                'helper': {'sources': files('unitac/mm-modem-helpers-unitac.c'), 'include_directories': plugins_incs, 'c_args': common_c_args},
+                'module': {'sources': sources, 'include_directories': plugins_incs + [unitac_inc], 'c_args': common_c_args},
+              }}
+
+  plugins_udev_rules += files('unitac/77-mm-unitac-port-types.rules')
+endif
+
 # plugin: via
 if plugins_options['via']
   sources = files(

@@ -66,6 +66,7 @@ option('plugin_telit', type: 'feature', value: 'auto', description: 'enable teli
 option('plugin_thuraya', type: 'feature', value: 'auto', description: 'enable thuraya plugin support')
 option('plugin_tplink', type: 'feature', value: 'auto', description: 'enable tplink plugin support')
 option('plugin_ublox', type: 'feature', value: 'auto', description: 'enable ublox plugin support')
+option('plugin_unitac', type: 'feature', value: 'auto', description: 'enable unitac plugin support')
 option('plugin_via', type: 'feature', value: 'auto', description: 'enable via plugin support')
 option('plugin_wavecom', type: 'feature', value: 'auto', description: 'enable wavecom plugin support')
 option('plugin_x22x', type: 'feature', value: 'auto', description: 'enable x22x plugin support')

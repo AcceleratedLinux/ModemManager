@@ -133,6 +133,9 @@ MMPlugin *mm_plugin_create_tplink (void);
 #if defined ENABLE_PLUGIN_UBLOX
 MMPlugin *mm_plugin_create_ublox (void);
 #endif
+#if defined ENABLE_PLUGIN_UNITAC
+MMPlugin *mm_plugin_create_unitac (void);
+#endif
 #if defined ENABLE_PLUGIN_VIA
 MMPlugin *mm_plugin_create_via (void);
 #endif
@@ -270,6 +273,9 @@ mm_builtin_plugins_load (void)
 #endif
 #if defined ENABLE_PLUGIN_UBLOX
     PREPEND_PLUGIN (ublox);
+#endif
+#if defined ENABLE_PLUGIN_UNITAC
+    PREPEND_PLUGIN (unitac);
 #endif
 #if defined ENABLE_PLUGIN_VIA
     PREPEND_PLUGIN (via);
