@@ -721,12 +721,109 @@ load_operator_identifier (MMBaseSim           *_self,
 /*****************************************************************************/
 /* Load operator name */
 
+static gboolean
+get_home_network (QmiClientNas  *client,
+                  GAsyncResult  *res,
+                  guint16       *out_mcc,
+                  guint16       *out_mnc,
+                  gboolean      *out_mnc_with_pcs,
+                  gchar        **out_operator_name,
+                  GError       **error)
+{
+    QmiMessageNasGetHomeNetworkOutput *output = NULL;
+    gboolean success = FALSE;
+
+    output = qmi_client_nas_get_home_network_finish (client, res, error);
+    if (!output) {
+        g_prefix_error (error, "QMI operation failed: ");
+    } else if (!qmi_message_nas_get_home_network_output_get_result (output, error)) {
+        g_prefix_error (error, "Couldn't get home network: ");
+    } else {
+        const gchar *name = NULL;
+
+        qmi_message_nas_get_home_network_output_get_home_network (
+            output,
+            out_mcc,
+            out_mnc,
+            &name,
+            NULL);
+        if (out_operator_name)
+            *out_operator_name = g_strdup (name);
+
+        if (out_mnc_with_pcs) {
+            gboolean is_3gpp;
+            gboolean mnc_includes_pcs_digit;
+
+            if (qmi_message_nas_get_home_network_output_get_home_network_3gpp_mnc (
+                    output,
+                    &is_3gpp,
+                    &mnc_includes_pcs_digit,
+                    NULL) &&
+                is_3gpp &&
+                mnc_includes_pcs_digit) {
+                /* MNC should include PCS digit */
+                *out_mnc_with_pcs = TRUE;
+            } else {
+                /* We default to NO PCS digit, unless of course the MNC is already > 99 */
+                *out_mnc_with_pcs = FALSE;
+            }
+        }
+
+        success = TRUE;
+    }
+
+    if (output)
+        qmi_message_nas_get_home_network_output_unref (output);
+
+    return success;
+}
+
+static void
+load_operator_name_nas_ready (QmiClientNas *client,
+                              GAsyncResult *res,
+                              GTask        *task)
+{
+    gchar *operator_name = NULL;
+    GError *error = NULL;
+
+    if (!get_home_network (client, res, NULL, NULL, NULL, &operator_name, &error))
+        g_task_return_error (task, error);
+    else {
+        g_task_return_pointer (task, operator_name, g_free);
+    }
+    g_object_unref (task);
+}
+
 static gchar *
 load_operator_name_finish (MMBaseSim     *self,
                            GAsyncResult  *res,
                            GError       **error)
 {
     return g_task_propagate_pointer (G_TASK (res), error);
+}
+
+static void nas_operator_name_ready (MMSimQmi     *self,
+                                     GAsyncResult *res,
+                                     GTask        *task)
+{
+    GError    *error = NULL;
+    QmiClient *nasclient = NULL;
+
+    mm_obj_dbg (self, "loading SIM operator name using NAS...");
+    if (!ensure_qmi_client (task,
+                            MM_SIM_QMI (self),
+                            QMI_SERVICE_NAS, &nasclient)) {
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    qmi_client_nas_get_home_network (QMI_CLIENT_NAS (nasclient),
+                                     NULL,
+                                     5,
+                                     NULL,
+                                     (GAsyncReadyCallback)load_operator_name_nas_ready,
+                                     task);
 }
 
 static void
@@ -737,22 +834,29 @@ uim_read_efspn_ready (QmiClientUim *client,
     GError            *error = NULL;
     g_autoptr(GArray)  read_result = NULL;
     gchar             *spn;
+    MMSimQmi          *self;
+
+    self = g_task_get_source_object (task);
 
     read_result = uim_read_finish (client, res, &error);
     if (!read_result) {
-        g_task_return_error (task, error);
-        g_object_unref (task);
+        nas_operator_name_ready(self, res, task);
         return;
     }
 
     spn = mm_sim_convert_spn_to_utf8 ((const guint8 *) read_result->data, read_result->len, &error);
     if (!spn) {
         g_task_return_error (task, error);
+        g_object_unref (task);
     } else {
-        g_task_return_pointer (task, spn, g_free);
+        mm_obj_dbg (self, "SPN Value: %s", spn);
+        if (g_strcmp0 (spn, "DATA ONLY") == 0) {
+            nas_operator_name_ready(self, res, task);
+        } else {
+            g_task_return_pointer (task, spn, g_free);
+            g_object_unref (task);
+        }
     }
-
-    g_object_unref (task);
 }
 
 static void
