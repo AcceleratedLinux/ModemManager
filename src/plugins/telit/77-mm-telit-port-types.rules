@@ -170,6 +170,9 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1071", ENV{ID_MM_TTY_AT_PROBE_TRIES}
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="3000", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="3001", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 
+# LE910C1 initial port delay
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1201", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+
 GOTO="mm_telit_end"
 
 LABEL="mm_telit_intel"
