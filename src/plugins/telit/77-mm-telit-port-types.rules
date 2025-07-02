@@ -132,7 +132,12 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1101", ENV{.MM_USBIFNUM}=="02", SUBS
 # MEx10G1
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110a", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110a", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110a", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110a", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PPP}="1"
+
+# MEx10G1
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110b", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110b", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="110b", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PPP}="1"
 
 # FN912C04 (NMEA)
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="3000", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
