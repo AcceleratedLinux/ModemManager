@@ -1941,6 +1941,22 @@ typedef enum { /*< underscore_name=mm_bearer_roaming_allowance >*/
 } MMBearerRoamingAllowance;
 
 /**
+ * MMBearerConnectionType:
+ * @MM_BEARER_CONNECTION_TYPE_UNKNOWN: Unknown connection type.
+ * @MM_BEARER_CONNECTION_TYPE_ECM: Ethernet Control Model (ECM) connection.
+ * @MM_BEARER_CONNECTION_TYPE_PPP: Point-to-Point Protocol (PPP) connection.
+ *
+ * Type of connection to be used for the bearer.
+ *
+ * Since: 1.22
+ */
+typedef enum { /*< underscore_name=mm_bearer_connection_type >*/
+    MM_BEARER_CONNECTION_TYPE_UNKNOWN = 0,
+    MM_BEARER_CONNECTION_TYPE_ECM     = 1,
+    MM_BEARER_CONNECTION_TYPE_PPP     = 2,
+} MMBearerConnectionType;
+
+/**
  * MMBearerProfileSource:
  * @MM_BEARER_PROFILE_SOURCE_UNKNOWN: Unknown.
  * @MM_BEARER_PROFILE_SOURCE_ADMIN: Profile created by an enterprise IT admin from the OS.

@@ -54,6 +54,7 @@ G_DEFINE_TYPE (MMBearerProperties, mm_bearer_properties, G_TYPE_OBJECT)
 #define PROPERTY_FORCE     "force"
 #define PROPERTY_NUMBER        "number"
 #define PROPERTY_SESSION_ID    "session-id"
+#define PROPERTY_CONN_TYPE     "conn-type"
 
 /* no longer used properties */
 #define DEPRECATED_PROPERTY_NUMBER "number"
@@ -77,6 +78,8 @@ struct _MMBearerPropertiesPrivate {
     /* Session ID */
     guint32 session_id;
     gboolean session_id_set;
+    /* Connection type */
+    MMBearerConnectionType conn_type;
 };
 
 /*****************************************************************************/
@@ -739,6 +742,13 @@ mm_bearer_properties_get_dictionary (MMBearerProperties *self)
                                PROPERTY_SESSION_ID,
                                g_variant_new_uint32 (self->priv->session_id));
 
+    if (self->priv->conn_type != MM_BEARER_CONNECTION_TYPE_UNKNOWN) {
+        g_variant_builder_add (&builder,
+                               "{sv}",
+                               PROPERTY_CONN_TYPE,
+                               g_variant_new_uint32 (self->priv->conn_type));
+    }
+
     /* Merge dictionaries */
     profile_dictionary = mm_3gpp_profile_get_dictionary (self->priv->profile);
     g_variant_iter_init (&iter, profile_dictionary);
@@ -814,6 +824,13 @@ mm_bearer_properties_consume_string (MMBearerProperties  *self,
             return FALSE;
         }
         mm_bearer_properties_set_session_id (self, session_id);
+    } else if (g_str_equal (key, PROPERTY_CONN_TYPE)) {
+        MMBearerConnectionType conn_type = MM_BEARER_CONNECTION_TYPE_UNKNOWN;
+        if (g_strcmp0 (value, "ecm") == 0)
+            conn_type = MM_BEARER_CONNECTION_TYPE_ECM;
+        else if (g_strcmp0 (value, "ppp") == 0)
+            conn_type = MM_BEARER_CONNECTION_TYPE_PPP;
+        mm_bearer_properties_set_conn_type (self, conn_type);
     } else {
         inner_error = g_error_new (MM_CORE_ERROR, MM_CORE_ERROR_UNSUPPORTED,
                                    "Invalid properties string, unsupported key '%s'", key);
@@ -898,6 +915,8 @@ mm_bearer_properties_consume_variant (MMBearerProperties  *self,
         mm_bearer_properties_set_number (self, g_variant_get_string (value, NULL));
     else if (g_str_equal (key, PROPERTY_SESSION_ID))
         mm_bearer_properties_set_session_id (self, g_variant_get_uint32 (value));
+    else if (g_str_equal (key, PROPERTY_CONN_TYPE))
+        mm_bearer_properties_set_conn_type (self, g_variant_get_uint32 (value));
     else {
         /* Set error */
         g_set_error (error, MM_CORE_ERROR, MM_CORE_ERROR_INVALID_ARGS,
@@ -1063,6 +1082,8 @@ mm_bearer_properties_cmp (MMBearerProperties         *a,
         return FALSE;
     if (!cmp_str (a->priv->number, b->priv->number, flags))
         return FALSE;
+    if (a->priv->conn_type != b->priv->conn_type)
+        return FALSE;
     if (!(flags & MM_BEARER_PROPERTIES_CMP_FLAGS_NO_ALLOW_ROAMING)) {
         if (a->priv->allow_roaming != b->priv->allow_roaming)
             return FALSE;
@@ -1109,6 +1130,10 @@ mm_bearer_properties_print (MMBearerProperties *self,
     }
     if (self->priv->session_id_set) {
         g_ptr_array_add (array, g_strdup_printf (PROPERTY_SESSION_ID ": %u", self->priv->session_id));
+    }
+    if (self->priv->conn_type != MM_BEARER_CONNECTION_TYPE_UNKNOWN) {
+        const gchar *conn_type_str = (self->priv->conn_type == MM_BEARER_CONNECTION_TYPE_ECM) ? "ecm" : "ppp";
+        g_ptr_array_add (array, g_strdup_printf (PROPERTY_CONN_TYPE ": %s", conn_type_str));
     }
     return array;
 }
@@ -1164,6 +1189,7 @@ mm_bearer_properties_init (MMBearerProperties *self)
     self->priv->force = FALSE;
     self->priv->session_id = 0;
     self->priv->session_id_set = FALSE;
+    self->priv->conn_type = MM_BEARER_CONNECTION_TYPE_UNKNOWN;
 }
 
 static void
@@ -1239,4 +1265,40 @@ mm_bearer_properties_is_session_id_set (MMBearerProperties *self)
     g_return_val_if_fail (MM_IS_BEARER_PROPERTIES (self), FALSE);
 
     return self->priv->session_id_set;
+}
+
+/**
+ * mm_bearer_properties_set_conn_type:
+ * @self: a #MMBearerProperties.
+ * @conn_type: the connection type.
+ *
+ * Sets the connection type to use when performing the connection.
+ *
+ * Since: 1.22
+ */
+void
+mm_bearer_properties_set_conn_type (MMBearerProperties *self,
+                                   MMBearerConnectionType conn_type)
+{
+    g_return_if_fail (MM_IS_BEARER_PROPERTIES (self));
+
+    self->priv->conn_type = conn_type;
+}
+
+/**
+ * mm_bearer_properties_get_conn_type:
+ * @self: a #MMBearerProperties.
+ *
+ * Gets the connection type to use when performing the connection.
+ *
+ * Returns: the connection type.
+ *
+ * Since: 1.22
+ */
+MMBearerConnectionType
+mm_bearer_properties_get_conn_type (MMBearerProperties *self)
+{
+    g_return_val_if_fail (MM_IS_BEARER_PROPERTIES (self), MM_BEARER_CONNECTION_TYPE_UNKNOWN);
+
+    return self->priv->conn_type;
 }

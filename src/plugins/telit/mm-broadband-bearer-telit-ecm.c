@@ -23,6 +23,7 @@
 
 G_DEFINE_TYPE (MMBroadbandBearerTelitEcm, mm_broadband_bearer_telit_ecm, MM_TYPE_BROADBAND_BEARER)
 
+
 /*****************************************************************************/
 /* Common helper functions                                                   */
 
@@ -345,10 +346,22 @@ connect_3gpp (MMBroadbandBearer   *self,
 /*****************************************************************************/
 /* Dial context and task                                                     */
 
+static void dial_3gpp_context_step (GTask *task);
+
+typedef enum {
+    DIAL_3GPP_STEP_FIRST,
+    DIAL_3GPP_STEP_ECM_ATTACH,
+    DIAL_3GPP_STEP_ECM_QUERY,
+    DIAL_3GPP_STEP_PS_ATTACH_QUERY,
+    DIAL_3GPP_STEP_PS_ATTACH,
+    DIAL_3GPP_STEP_LAST
+} Dial3gppStep;
 typedef struct {
     MMPortSerialAt   *primary;
     guint             cid;
     MMPort           *data;
+    MMBroadbandModem *modem;
+    Dial3gppStep      step;
 } DialContext;
 
 static void
@@ -356,6 +369,7 @@ dial_task_free (DialContext *ctx)
 {
     g_object_unref (ctx->primary);
     g_clear_object (&ctx->data);
+    g_object_unref (ctx->modem);
     g_slice_free (DialContext, ctx);
 }
 
@@ -372,8 +386,10 @@ dial_task_new (MMBroadbandBearerTelitEcm *self,
     GTask       *task;
 
     ctx          = g_slice_new0 (DialContext);
+    ctx->modem   = g_object_ref (modem);
     ctx->primary = g_object_ref (primary);
     ctx->cid     = cid;
+    ctx->step    = DIAL_3GPP_STEP_FIRST;
 
     task = g_task_new (self, cancellable, callback, user_data);
     g_task_set_task_data (task, ctx, (GDestroyNotify) dial_task_free);
@@ -401,6 +417,89 @@ dial_3gpp_finish (MMBroadbandBearer  *self,
 {
     return g_task_propagate_pointer (G_TASK (res), error);
 }
+
+static void
+cgact_query_ready (MMBaseModem  *modem,
+                   GAsyncResult *res,
+                   GTask        *task)
+{
+    MMBroadbandBearerTelitEcm  *self;
+    DialContext                *ctx;
+    const gchar                *response;
+    GError                     *error           = NULL;
+    GList                      *pdp_active_list = NULL;
+    GList                      *l;
+    MMBearerConnectionStatus status           = MM_BEARER_CONNECTION_STATUS_UNKNOWN;
+
+    self = g_task_get_source_object (task);
+    ctx = g_task_get_task_data (task);
+
+    response = mm_base_modem_at_command_full_finish (modem, res, &error);
+    if (response)
+        pdp_active_list = mm_3gpp_parse_cgact_read_response (response, &error);
+
+    if (error) {
+        g_assert (!pdp_active_list);
+        g_prefix_error (&error, "couldn't check current list of active PDP contexts: ");
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    for (l = pdp_active_list; l; l = g_list_next (l)) {
+        MM3gppPdpContextActive *pdp_active;
+
+        /* We look for the PDP context with our CID */
+        pdp_active = (MM3gppPdpContextActive *)(l->data);
+        if (pdp_active->cid == ctx->cid) {
+            status = (pdp_active->active ? MM_BEARER_CONNECTION_STATUS_CONNECTED : MM_BEARER_CONNECTION_STATUS_DISCONNECTED);
+            break;
+        }
+    }
+    mm_3gpp_pdp_context_active_list_free (pdp_active_list);
+
+    /* PDP context not found? This shouldn't happen, error out */
+    if (status == MM_BEARER_CONNECTION_STATUS_UNKNOWN) {
+        g_task_return_new_error (task, MM_CORE_ERROR, MM_CORE_ERROR_FAILED,
+                                 "PDP context not found in the known contexts list");
+        g_object_unref (task);
+        return;
+    }
+
+    /* If PS is already attached, skip to the last step */
+    if (status == MM_BEARER_CONNECTION_STATUS_CONNECTED) {
+        mm_obj_dbg (self, "PS already attached for CID %u, proceeding to final step", ctx->cid);
+        ctx->step = DIAL_3GPP_STEP_LAST;
+    } else {
+        mm_obj_dbg (self, "PS not attached for CID %u, proceeding to PS attach", ctx->cid);
+        ctx->step = DIAL_3GPP_STEP_PS_ATTACH;
+    }
+
+    /* Go on */
+    dial_3gpp_context_step (task);
+}
+
+static void
+cgact_attach_ready (MMBaseModem  *modem,
+                    GAsyncResult *res,
+                    GTask        *task)
+{
+    DialContext *ctx;
+    GError      *error = NULL;
+
+    ctx = g_task_get_task_data (task);
+
+    if (!mm_base_modem_at_command_full_finish (modem, res, &error)) {
+        g_task_return_error (task, error);
+        g_object_unref (task);
+        return;
+    }
+
+    /* Go on to the last step */
+    ctx->step = DIAL_3GPP_STEP_LAST;
+    dial_3gpp_context_step (task);
+}
+
 
 static void
 ecm_verify_ready (MMBaseModem  *modem,
@@ -431,11 +530,11 @@ ecm_verify_ready (MMBaseModem  *modem,
             g_object_unref (task);
             return;
         }
-
-        g_task_return_pointer (task, g_object_ref (ctx->data), g_object_unref);
     }
 
-    g_object_unref (task);
+    /* Go on */
+    ctx->step++;
+    dial_3gpp_context_step (task);
 }
 
 static void
@@ -443,7 +542,10 @@ ecm_activate_ready (MMBaseModem  *modem,
                     GAsyncResult *res,
                     GTask        *task)
 {
-    GError *error = NULL;
+    DialContext *ctx;
+    GError      *error = NULL;
+
+    ctx = g_task_get_task_data (task);
 
     if (!mm_base_modem_at_command_finish (modem, res, &error)) {
         g_task_return_error (task, error);
@@ -451,12 +553,84 @@ ecm_activate_ready (MMBaseModem  *modem,
         return;
     }
 
-    mm_base_modem_at_command (modem,
-                              "#ECM?",
-                              3,
-                              FALSE, /* allow_cached */
-                              (GAsyncReadyCallback) ecm_verify_ready,
-                              task);
+    /* Go on */
+    ctx->step++;
+    dial_3gpp_context_step (task);
+}
+
+static void
+dial_3gpp_context_step (GTask *task)
+{
+    DialContext    *ctx;
+    MMBroadbandBearerTelitEcm  *self;
+    g_autofree gchar *cmd = NULL;
+
+    ctx = g_task_get_task_data (task);
+    self = g_task_get_source_object (task);
+
+    if (g_task_return_error_if_cancelled (task)) {
+        g_object_unref (task);
+        return;
+    }
+
+    switch (ctx->step) {
+        case DIAL_3GPP_STEP_FIRST:
+            ctx->step++;
+            /* fall through */
+
+        case DIAL_3GPP_STEP_ECM_ATTACH:
+            mm_obj_dbg (self, "activating ECM...");
+            cmd = g_strdup_printf ("#ECM=%u,0", ctx->cid);
+            mm_base_modem_at_command (MM_BASE_MODEM(ctx->modem),
+                                      cmd,
+                                      MM_BASE_BEARER_DEFAULT_CONNECTION_TIMEOUT,
+                                      FALSE, /* allow_cached */
+                                      (GAsyncReadyCallback) ecm_activate_ready,
+                                      task);
+            return;
+
+        case DIAL_3GPP_STEP_ECM_QUERY:
+            mm_obj_dbg (self, "checking ECM status...");
+            mm_base_modem_at_command (MM_BASE_MODEM(ctx->modem),
+                                      "#ECM?",
+                                      3,
+                                      FALSE, /* allow_cached */
+                                      (GAsyncReadyCallback) ecm_verify_ready,
+                                      task);
+            return;
+
+        case DIAL_3GPP_STEP_PS_ATTACH_QUERY:
+            mm_obj_dbg (self, "checking PS status...");
+            mm_base_modem_at_command (MM_BASE_MODEM(ctx->modem),
+                                      "+CGACT?",
+                                      10,
+                                      FALSE, /* allow_cached */
+                                      (GAsyncReadyCallback)cgact_query_ready,
+                                      task);
+            return;
+
+        case DIAL_3GPP_STEP_PS_ATTACH:
+            mm_obj_dbg (self, "activating PS...");
+            cmd = g_strdup_printf ("+CGACT=1,%u", ctx->cid);
+            mm_base_modem_at_command (MM_BASE_MODEM(ctx->modem),
+                                      cmd,
+                                      20,
+                                      FALSE, /* allow_cached */
+                                      (GAsyncReadyCallback)cgact_attach_ready,
+                                      task);
+            return;
+
+        case DIAL_3GPP_STEP_LAST:
+            mm_obj_dbg (self, "dialing 3gpp context step last");
+            g_task_return_pointer (task,
+                                   g_object_ref (ctx->data),
+                                   g_object_unref);
+            g_object_unref (task);
+            return;
+
+        default:
+            g_assert_not_reached ();
+    }
 }
 
 static void
@@ -469,7 +643,6 @@ dial_3gpp (MMBroadbandBearer   *self,
            gpointer             user_data)
 {
     GTask            *task;
-    g_autofree gchar *cmd = NULL;
 
     task = dial_task_new (MM_BROADBAND_BEARER_TELIT_ECM (self),
                           MM_BROADBAND_MODEM (modem),
@@ -481,13 +654,8 @@ dial_3gpp (MMBroadbandBearer   *self,
     if (!task)
         return;
 
-    cmd = g_strdup_printf ("#ECM=%u,0", cid);
-    mm_base_modem_at_command (modem,
-                              cmd,
-                              MM_BASE_BEARER_DEFAULT_CONNECTION_TIMEOUT,
-                              FALSE, /* allow_cached */
-                              (GAsyncReadyCallback) ecm_activate_ready,
-                              task);
+    dial_3gpp_context_step (task);
+
 }
 
 /*****************************************************************************/

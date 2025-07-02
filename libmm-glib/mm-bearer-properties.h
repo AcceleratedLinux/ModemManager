@@ -97,8 +97,10 @@ void mm_bearer_properties_set_force                  (MMBearerProperties        
                                                       gboolean                      force);
 void mm_bearer_properties_set_number                 (MMBearerProperties           *self,
                                                       const gchar                  *number);
-void mm_bearer_properties_set_session_id             (MMBearerProperties *self, 
+void mm_bearer_properties_set_session_id             (MMBearerProperties *self,
                                                       guint32                      session_id);
+void mm_bearer_properties_set_conn_type              (MMBearerProperties *self,
+                                                      MMBearerConnectionType conn_type);
 
 const gchar                 *mm_bearer_properties_get_apn                    (MMBearerProperties *self);
 MMBearerAllowedAuth          mm_bearer_properties_get_allowed_auth           (MMBearerProperties *self);
@@ -117,6 +119,7 @@ gboolean                     mm_bearer_properties_get_force                  (MM
 const gchar                 *mm_bearer_properties_get_number                 (MMBearerProperties *self);
 guint32 mm_bearer_properties_get_session_id(MMBearerProperties *self);
 gboolean mm_bearer_properties_is_session_id_set(MMBearerProperties *self);
+MMBearerConnectionType mm_bearer_properties_get_conn_type              (MMBearerProperties *self);
 
 /*****************************************************************************/
 /* ModemManager/libmm-glib/mmcli specific methods */

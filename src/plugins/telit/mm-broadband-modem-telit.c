@@ -1620,17 +1620,43 @@ modem_create_bearer (MMIfaceModem        *_self,
 {
     MMBroadbandModemTelit *self = MM_BROADBAND_MODEM_TELIT (_self);
     GTask *task;
+    guint16 vendor_id, product_id;
+    MMBearerConnectionType conn_type;
 
     task = g_task_new (self, NULL, callback, user_data);
     g_task_set_task_data (task, g_object_ref (properties), g_object_unref);
 
+    vendor_id = mm_base_modem_get_vendor_id (MM_BASE_MODEM (self));
+    product_id = mm_base_modem_get_product_id (MM_BASE_MODEM (self));
+
+    /* Check if this is the specific VID:PID combination that supports conn-type parameter */
+    if (vendor_id == 0x1bc7 && product_id == 0x110b) {
+        mm_obj_dbg (self, "VID:PID 0x1bc7:0x110b detected, checking conn-type parameter");
+
+        if (properties) {
+            conn_type = mm_bearer_properties_get_conn_type (properties);
+
+            if (conn_type == MM_BEARER_CONNECTION_TYPE_ECM) {
+                mm_obj_dbg (self, "creating ECM bearer based on conn-type=ECM");
+                self->priv->ecm_support = FEATURE_SUPPORTED;
+                common_create_bearer (task);
+                return;
+            } else {
+                mm_obj_dbg (self, "creating PPP bearer based on conn-type=PPP");
+                self->priv->ecm_support = FEATURE_NOT_SUPPORTED;
+                common_create_bearer (task);
+                return;
+            }
+        }
+    }
+
     if (self->priv->ecm_support != FEATURE_SUPPORT_UNKNOWN) {
+        mm_obj_dbg (self, "ecm_support is not unknown");
         common_create_bearer (task);
         return;
     }
 
-    if (!(mm_base_modem_get_vendor_id (MM_BASE_MODEM (self)) == 0x1bc7 &&
-          mm_base_modem_get_product_id (MM_BASE_MODEM (self)) == 0x7021)) {
+    if (!(vendor_id == 0x1bc7 && product_id == 0x7021)) {
         /* ECM supported just in LE910Q1/ELS63-I composition 0x7021 */
         self->priv->ecm_support = FEATURE_NOT_SUPPORTED;
         common_create_bearer (task);
