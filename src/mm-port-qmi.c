@@ -2745,7 +2745,7 @@ mm_port_qmi_set_net_details (MMPortQmi *self,
     self->priv->net_sysfs_path = g_strdup (mm_kernel_device_get_sysfs_path (first_net_dev));
 
     g_assert (!self->priv->net_preallocated_links_requested);
-    self->priv->net_preallocated_links_requested = mm_kernel_device_get_global_property_as_int (first_net_dev, "ID_MM_QMI_PREALLOCATED_LINKS");
+    self->priv->net_preallocated_links_requested = 4;
 
     initialize_endpoint_info (self);
 }
