@@ -90,7 +90,6 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1061", ENV{.MM_USBIFNUM}=="07", ENV{
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{ID_MM_TELIT_PORT_DELAY}="1"
 
 # FN990
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1070", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
@@ -203,7 +202,10 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="3001", ENV{ID_MM_TTY_AT_PROBE_TRIES}
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1201", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 
 # FE910C04 initial port delay
-ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10c0", ENV{ID_MM_TELIT_PORT_DELAY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10c0", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+
+# FN920 initial port delay
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 
 GOTO="mm_telit_end"
 
