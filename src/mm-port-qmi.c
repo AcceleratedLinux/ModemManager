@@ -2582,7 +2582,7 @@ port_open_step (GTask *task)
             mm_obj_dbg (self, "Opening device with flags: %s...", open_flags_str);
             qmi_device_open (ctx->device,
                              open_flags,
-                             45,
+                             60,
                              g_task_get_cancellable (task),
                              (GAsyncReadyCallback) qmi_device_open_first_ready,
                              task);
