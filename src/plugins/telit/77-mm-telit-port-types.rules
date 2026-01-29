@@ -104,6 +104,34 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1071", ENV{.MM_USBIFNUM}=="07", ENV{
 # FN990 (PCIe composition: ignore, since it should not be detected as a modem)
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1075", ENV{ID_MM_DEVICE_IGNORE}="1"
 
+# FN920C04 (rmnet)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# FN920C04 (MBIM)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a2", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a2", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a2", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# FN920C04 (rmnet)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a4", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a4", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a4", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# FN920C04 (MBIM)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a7", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a7", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_SECONDARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a7", ENV{.MM_USBIFNUM}=="04", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# FN920C04 (rmnet)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a9", ENV{.MM_USBIFNUM}=="01", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a9", ENV{.MM_USBIFNUM}=="02", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
+# FN920C04 (MBIM)
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10aa", ENV{.MM_USBIFNUM}=="02", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_AT_PRIMARY}="1"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10aa", ENV{.MM_USBIFNUM}=="03", ENV{ID_MM_PORT_TYPE_QCDM}="1"
+
 # LE910C1 with default usb cfg
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1201", ENV{.MM_USBIFNUM}=="00", ENV{ID_MM_PORT_TYPE_QCDM}="1"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1201", ENV{.MM_USBIFNUM}=="03", SUBSYSTEM=="tty", ENV{ID_MM_PORT_TYPE_GPS}="1"
@@ -178,6 +206,14 @@ ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1061", ENV{ID_MM_TTY_AT_PROBE_TRIES}
 # FN990 initial port delay
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1070", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1071", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+
+# FN920C04 initial port delay
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a0", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a2", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a4", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a7", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10a9", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
+ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="10aa", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
 
 # FN912C04 initial port delay
 ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="3000", ENV{ID_MM_TTY_AT_PROBE_TRIES}="14"
