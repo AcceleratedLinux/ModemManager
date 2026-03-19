@@ -237,9 +237,21 @@ mm_filter_port (MMFilter        *self,
         return FALSE;
     }
 
-    /* If this is a net device, we always allow it */
+    /* If this is a net device, allow it unless its physical device is on the
+     * platform bus with no modem credentials. Net devices over platform-bus
+     * devices (e.g. ethernet switch ports, network bridges over them) are not
+     * modem ports and must not be grouped with or probed as modems.
+     * USB/PCI net devices (wwan, qmimux, mbim) are unaffected. */
     if ((self->priv->enabled_rules & MM_FILTER_RULE_NET) &&
         (g_strcmp0 (subsystem, "net") == 0)) {
+        const gchar *physdev_subsystem;
+
+        physdev_subsystem = mm_kernel_device_get_physdev_subsystem (port);
+        if (!g_strcmp0 (physdev_subsystem, "platform") ||
+            !g_strcmp0 (physdev_subsystem, "pnp")) {
+            mm_obj_dbg (self, "(%s/%s) port filtered: net device on platform bus", subsystem, name);
+            return FALSE;
+        }
         mm_obj_dbg (self, "(%s/%s) port allowed: net device", subsystem, name);
         return TRUE;
     }
