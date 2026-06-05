@@ -1470,8 +1470,8 @@ load_settings_from_bearer (MMBearerMbim        *self,
     const gchar              *data_port_driver;
 
     /* Get session ID if set */
-    if (mm_bearer_properties_is_session_id_set (properties)) {
-        ctx->session_id = mm_bearer_properties_get_session_id (properties);
+    if (mm_bearer_properties_is_session_id_set (props)) {
+        ctx->session_id = mm_bearer_properties_get_session_id (props);
         mm_obj_dbg (self, "Using session-id=%u", ctx->session_id);
     }
 
