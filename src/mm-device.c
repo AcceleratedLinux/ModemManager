@@ -525,6 +525,35 @@ mm_device_remove_modem_quick (MMDevice *self)
 
 #define REPROBE_SECS 2
 
+/* The default reprobe delay may be overridden on a per-device basis via the
+ * "ID_MM_DEVICE_REPROBE_DELAY" udev property (in seconds). This is useful for
+ * modems that perform a silent software reset (SSR) after a SIM slot change,
+ * where the ports stay present but the modem is unresponsive for a while and
+ * a premature reprobe would fail. Set it with a udev rule matching the target
+ * VID:PID, e.g.:
+ *   ATTRS{idVendor}=="1bc7", ATTRS{idProduct}=="1234", ENV{ID_MM_DEVICE_REPROBE_DELAY}="20"
+ */
+static guint
+device_get_reprobe_delay (MMDevice *self)
+{
+    GList *l;
+
+    for (l = self->priv->port_probes; l; l = g_list_next (l)) {
+        MMKernelDevice *port;
+        gint            delay;
+
+        port = mm_port_probe_peek_port (MM_PORT_PROBE (l->data));
+        if (!port)
+            continue;
+
+        delay = mm_kernel_device_get_global_property_as_int (port, "ID_MM_DEVICE_REPROBE_DELAY");
+        if (delay > 0)
+            return (guint) delay;
+    }
+
+    return REPROBE_SECS;
+}
+
 static gboolean
 reprobe (MMDevice *self)
 {
@@ -554,9 +583,13 @@ modem_valid_remove_ready (MMDevice     *self,
         mm_obj_warn (self, "removing modem failed: %s", error->message);
 
     if (mm_base_modem_get_reprobe (modem)) {
+        guint reprobe_delay;
+
+        reprobe_delay = device_get_reprobe_delay (self);
         if (self->priv->reprobe_id)
             g_source_remove (self->priv->reprobe_id);
-        self->priv->reprobe_id = g_timeout_add_seconds (REPROBE_SECS, (GSourceFunc)reprobe, self);
+        mm_obj_dbg (self, "modem scheduled to be reprobed in %u seconds", reprobe_delay);
+        self->priv->reprobe_id = g_timeout_add_seconds (reprobe_delay, (GSourceFunc)reprobe, self);
     }
 
     g_object_unref (modem);
