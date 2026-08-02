@@ -74,6 +74,7 @@ mm_plugin_create_altair_lte (void)
 {
     static const gchar *subsystems[] = { "tty", "net", NULL };
     static const mm_uint16_pair products[] = {
+        { 0x216f, 0x0041 }, /* Altair ALT3100 */
         { 0x216f, 0x0047 }, /* Altair NPe */
         { 0, 0 }
     };
